@@ -391,19 +391,18 @@ export class Database {
   }
 
   async getDealsToActivate() {
-    // Знаходимо акції де current_people >= min_people і статус ще 'active'
+    // Знаходимо активні акції
     const { data, error } = await supabase
       .from('deals')
       .select('*, businesses(*)')
-      .eq('status', 'active')
-      .gte('current_people', supabase.raw('min_people'));
+      .eq('status', 'active');
     
     if (error) {
       console.error('Error getting deals to activate:', error);
       return [];
     }
     
-    // Фільтруємо вручну, бо Supabase не підтримує порівняння колонок напряму
+    // Фільтруємо: current_people >= min_people
     return (data || []).filter(deal => deal.current_people >= deal.min_people);
   }
 
