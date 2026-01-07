@@ -247,7 +247,10 @@ export class Database {
       .single();
     
     if (error) {
-      console.error('Error updating business state:', error);
+      // PGRST116 = no rows found - це нормально для нових бізнесів
+      if (error.code !== 'PGRST116') {
+        console.error('Error updating business state:', error);
+      }
       return null;
     }
     return data;
