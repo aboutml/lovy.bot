@@ -1,7 +1,7 @@
 import { Telegraf } from 'telegraf';
 import { config } from '../config.js';
 import { registerBusinessCommands } from '../handlers/business/commands.js';
-import { registerBusinessRegistrationHandlers, handleRegistrationText } from '../handlers/business/registration.js';
+import { registerBusinessRegistrationHandlers, handleRegistrationText, handleRegistrationPhoto } from '../handlers/business/registration.js';
 import { registerBusinessDealsHandlers, handleDealCreationText } from '../handlers/business/deals.js';
 import { registerVerificationHandlers, handleCodeVerificationText } from '../handlers/business/verification.js';
 import { db } from '../db/database.js';
@@ -75,6 +75,20 @@ export const createBusinessBot = () => {
 
     } catch (error) {
       console.error('[BusinessBot] Error handling text:', error);
+      await ctx.reply(getBizErrorMessage(), { parse_mode: 'HTML' });
+    }
+  });
+
+  // Обробка фото (для реєстрації бізнесу)
+  bot.on('photo', async (ctx) => {
+    try {
+      const business = await db.getBusinessByTelegramId(ctx.from.id);
+      
+      if (business?.state === 'registering_photo') {
+        await handleRegistrationPhoto(ctx, business);
+      }
+    } catch (error) {
+      console.error('[BusinessBot] Error handling photo:', error);
       await ctx.reply(getBizErrorMessage(), { parse_mode: 'HTML' });
     }
   });

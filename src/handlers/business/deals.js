@@ -68,7 +68,7 @@ export const registerBusinessDealsHandlers = (bot) => {
       for (const deal of deals) {
         await ctx.reply(getBizDealCardMessage(deal), {
           parse_mode: 'HTML',
-          reply_markup: businessDealCardKeyboard(deal.id).reply_markup,
+          reply_markup: businessDealCardKeyboard(deal.id, deal.status === 'completed').reply_markup,
         });
       }
     } catch (error) {
@@ -79,9 +79,62 @@ export const registerBusinessDealsHandlers = (bot) => {
 
   // Статистика (текстова кнопка)
   bot.hears('📈 Статистика', async (ctx) => {
-    // Викликаємо команду /stats
-    ctx.message.text = '/stats';
-    await bot.handleUpdate({ message: ctx.message });
+    try {
+      const business = await db.getBusinessByTelegramId(ctx.from.id);
+      
+      if (!business) {
+        await ctx.reply('Спочатку зареєструй свій бізнес!');
+        return;
+      }
+
+      const deals = await db.getBusinessDeals(business.id);
+      const activeDeals = deals.filter(d => d.status === 'active');
+      const completedDeals = deals.filter(d => d.status === 'completed');
+      
+      // Рахуємо загальну статистику
+      let totalBookings = 0;
+      let totalUsed = 0;
+      let totalRevenue = 0;
+      
+      for (const deal of deals) {
+        const bookings = await db.getDealBookings(deal.id);
+        totalBookings += bookings.length;
+        const used = bookings.filter(b => ['used', 'confirmed'].includes(b.status));
+        totalUsed += used.length;
+        totalRevenue += used.length * deal.discount_price;
+      }
+
+      const commission = Math.round(totalRevenue * 0.15);
+
+      const statsMessage = `📈 <b>Загальна статистика</b>
+
+🏢 <b>${business.name}</b>
+
+━━━━━━━━━━━━━━━
+📊 <b>Пропозиції:</b>
+• Активних: ${activeDeals.length}
+• Завершених: ${completedDeals.length}
+• Всього: ${deals.length}
+
+━━━━━━━━━━━━━━━
+👥 <b>Клієнти:</b>
+• Всього записів: ${totalBookings}
+• Використано кодів: ${totalUsed}
+
+━━━━━━━━━━━━━━━
+💰 <b>Фінанси:</b>
+• Загальний дохід: ${totalRevenue} грн
+• Комісія сервісу (15%): ${commission} грн
+━━━━━━━━━━━━━━━`;
+
+      await ctx.reply(statsMessage, { 
+        parse_mode: 'HTML',
+        reply_markup: businessMainMenuKeyboard.reply_markup,
+      });
+    } catch (error) {
+      console.error('Error in stats:', error);
+      await ctx.reply('Помилка отримання статистики');
+    }
   });
 
   // Вибір мінімальної кількості людей
@@ -246,18 +299,34 @@ export const registerBusinessDealsHandlers = (bot) => {
   bot.action(/biz_deal_end_(\d+)/, async (ctx) => {
     try {
       const dealId = parseInt(ctx.match[1]);
+      const deal = await db.getDealById(dealId);
+      
+      if (!deal) {
+        await ctx.answerCbQuery('Пропозицію не знайдено');
+        return;
+      }
+
+      // Перевіряємо чи не завершена
+      if (deal.status === 'completed') {
+        await ctx.answerCbQuery('Ця пропозиція вже завершена');
+        return;
+      }
       
       await db.updateDealStatus(dealId, 'completed');
       
       // Створюємо звіт
-      const deal = await db.getDealById(dealId);
-      if (deal) {
+      if (deal.businesses) {
         await db.createOrUpdateReport(deal.businesses.id, dealId);
       }
       
       await ctx.answerCbQuery('✅ Акцію завершено');
-      await ctx.reply('Акцію завершено. Звіт буде доступний у розділі статистики.', {
-        reply_markup: businessMainMenuKeyboard.reply_markup,
+      await ctx.editMessageText(getBizDealCardMessage({ ...deal, status: 'completed' }), {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '📊 Детальна статистика', callback_data: `biz_deal_stats_${dealId}` }],
+          ],
+        },
       });
     } catch (error) {
       console.error('Error in deal end:', error);

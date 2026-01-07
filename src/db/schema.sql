@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS businesses (
   city_id INTEGER REFERENCES cities(id),
   address TEXT,
   phone VARCHAR(50),
+  social_link TEXT,
+  image_url TEXT,
   description TEXT,
   rating DECIMAL(2,1) DEFAULT 0,
   review_count INTEGER DEFAULT 0,
@@ -75,6 +77,17 @@ CREATE TABLE IF NOT EXISTS businesses (
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Міграція: додати нові поля якщо вони не існують
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'businesses' AND column_name = 'social_link') THEN
+    ALTER TABLE businesses ADD COLUMN social_link TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'businesses' AND column_name = 'image_url') THEN
+    ALTER TABLE businesses ADD COLUMN image_url TEXT;
+  END IF;
+END $$;
 
 -- Пропозиції (акції)
 CREATE TABLE IF NOT EXISTS deals (

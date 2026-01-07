@@ -83,12 +83,28 @@ export const cancelKeyboard = Markup.keyboard([
 ]).resize();
 
 /**
+ * Кнопка пропустити + скасувати (для опціональних кроків)
+ */
+export const skipKeyboard = Markup.keyboard([
+  ['⏭️ Пропустити'],
+  ['❌ Скасувати'],
+]).resize();
+
+/**
  * Inline кнопки для картки пропозиції бізнесу
  */
-export const businessDealCardKeyboard = (dealId) => Markup.inlineKeyboard([
-  [Markup.button.callback('📊 Детальна статистика', `biz_deal_stats_${dealId}`)],
-  [Markup.button.callback('❌ Завершити достроково', `biz_deal_end_${dealId}`)],
-]);
+export const businessDealCardKeyboard = (dealId, isCompleted = false) => {
+  const buttons = [
+    [Markup.button.callback('📊 Детальна статистика', `biz_deal_stats_${dealId}`)],
+  ];
+  
+  // Кнопка завершення тільки для активних пропозицій
+  if (!isCompleted) {
+    buttons.push([Markup.button.callback('❌ Завершити достроково', `biz_deal_end_${dealId}`)]);
+  }
+  
+  return Markup.inlineKeyboard(buttons);
+};
 
 /**
  * Клавіатура підтвердження візиту
