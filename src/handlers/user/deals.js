@@ -1,0 +1,303 @@
+import { db } from '../../db/database.js';
+import { 
+  getDealCardMessage, 
+  getDealDetailsMessage, 
+  getAfterJoinMessage,
+  getCodeActivatedMessage,
+  getNoDealsMessage, 
+  getAlreadyJoinedMessage,
+  getErrorMessage 
+} from '../../utils/messages/userMessages.js';
+import { 
+  mainMenuKeyboard, 
+  dealCardInlineKeyboard, 
+  dealDetailsInlineKeyboard,
+  afterJoinInlineKeyboard,
+  activatedCodeInlineKeyboard,
+  backKeyboard
+} from '../../utils/keyboards/userKeyboards.js';
+import { generateUniqueCode } from '../../utils/codeGenerator.js';
+import { generateReferralLink } from '../../utils/helpers.js';
+
+// Мапінг категорій
+const categoryMapping = {
+  '💅 Краса': 'beauty',
+  '🍕 Їжа': 'food',
+  '🎯 Послуги': 'services',
+  '🏋️ Спорт': 'sport',
+  '🎭 Розваги': 'entertainment',
+  '💊 Здоров\'я': 'health',
+};
+
+/**
+ * Реєстрація обробників акцій
+ */
+export const registerDealsHandlers = (bot) => {
+  // Гарячі пропозиції
+  bot.hears('🔥 Гарячі пропозиції', async (ctx) => {
+    try {
+      const user = await db.getUserByTelegramId(ctx.from.id);
+      
+      if (!user?.city_id) {
+        await ctx.reply('Спочатку обери місто!');
+        return;
+      }
+
+      const deals = await db.getHotDeals(user.city_id, 5);
+      
+      if (deals.length === 0) {
+        await ctx.reply(getNoDealsMessage(), { parse_mode: 'HTML' });
+        return;
+      }
+
+      await ctx.reply('🔥 <b>Гарячі пропозиції</b>\n\nНайпопулярніші акції у твоєму місті:', { 
+        parse_mode: 'HTML' 
+      });
+
+      for (const deal of deals) {
+        await ctx.reply(getDealCardMessage(deal), {
+          parse_mode: 'HTML',
+          reply_markup: dealCardInlineKeyboard(deal.id).reply_markup,
+        });
+      }
+    } catch (error) {
+      console.error('Error in hot deals:', error);
+      await ctx.reply(getErrorMessage(), { parse_mode: 'HTML' });
+    }
+  });
+
+  // Обробка категорій
+  bot.hears(Object.keys(categoryMapping), async (ctx) => {
+    try {
+      const categorySlug = categoryMapping[ctx.message.text];
+      
+      if (!categorySlug) return;
+
+      const user = await db.getUserByTelegramId(ctx.from.id);
+      
+      if (!user?.city_id) {
+        await ctx.reply('Спочатку обери місто!');
+        return;
+      }
+
+      const category = await db.getCategoryBySlug(categorySlug);
+      const deals = await db.getActiveDeals(user.city_id, categorySlug, 10);
+      
+      if (deals.length === 0) {
+        await ctx.reply(getNoDealsMessage(category?.name), { parse_mode: 'HTML' });
+        return;
+      }
+
+      await ctx.reply(`${category?.emoji || ''} <b>${category?.name || 'Пропозиції'}</b>\n\nЗнайдено ${deals.length} пропозицій:`, { 
+        parse_mode: 'HTML' 
+      });
+
+      for (const deal of deals) {
+        await ctx.reply(getDealCardMessage(deal), {
+          parse_mode: 'HTML',
+          reply_markup: dealCardInlineKeyboard(deal.id).reply_markup,
+        });
+      }
+    } catch (error) {
+      console.error('Error in category deals:', error);
+      await ctx.reply(getErrorMessage(), { parse_mode: 'HTML' });
+    }
+  });
+
+  // Детальний перегляд акції
+  bot.action(/deal_view_(\d+)/, async (ctx) => {
+    try {
+      const dealId = parseInt(ctx.match[1]);
+      const deal = await db.getDealById(dealId);
+      
+      if (!deal) {
+        await ctx.answerCbQuery('Пропозицію не знайдено');
+        return;
+      }
+
+      const user = await db.getUserByTelegramId(ctx.from.id);
+      const existingBooking = await db.getUserBooking(user?.id, dealId);
+      const isJoined = !!existingBooking;
+
+      await ctx.editMessageText(getDealDetailsMessage(deal, isJoined), {
+        parse_mode: 'HTML',
+        reply_markup: dealDetailsInlineKeyboard(dealId, isJoined).reply_markup,
+      });
+      
+      await ctx.answerCbQuery();
+    } catch (error) {
+      console.error('Error in deal view:', error);
+      await ctx.answerCbQuery('Помилка. Спробуй ще раз.');
+    }
+  });
+
+  // Приєднатися до акції
+  bot.action(/deal_join_(\d+)/, async (ctx) => {
+    try {
+      const dealId = parseInt(ctx.match[1]);
+      const deal = await db.getDealById(dealId);
+      
+      if (!deal) {
+        await ctx.answerCbQuery('Пропозицію не знайдено');
+        return;
+      }
+
+      if (deal.status !== 'active' && deal.status !== 'activated') {
+        await ctx.answerCbQuery('Ця пропозиція вже не активна');
+        return;
+      }
+
+      const user = await db.getUserByTelegramId(ctx.from.id);
+      
+      if (!user) {
+        await ctx.answerCbQuery('Спочатку натисни /start');
+        return;
+      }
+
+      // Перевіряємо чи вже приєднався
+      const existingBooking = await db.getUserBooking(user.id, dealId);
+      
+      if (existingBooking) {
+        await ctx.answerCbQuery('Ти вже приєднався до цієї пропозиції!');
+        
+        // Показуємо інформацію про бронювання
+        if (existingBooking.status === 'activated') {
+          await ctx.editMessageText(getCodeActivatedMessage(existingBooking, deal), {
+            parse_mode: 'HTML',
+            reply_markup: activatedCodeInlineKeyboard(existingBooking).reply_markup,
+          });
+        }
+        return;
+      }
+
+      // Генеруємо код та створюємо бронювання
+      const code = await generateUniqueCode(db);
+      const booking = await db.createBooking(user.id, dealId, code);
+      
+      if (!booking) {
+        await ctx.answerCbQuery('Помилка при бронюванні. Спробуй ще раз.');
+        return;
+      }
+
+      // Оновлюємо дані акції
+      const updatedDeal = await db.getDealById(dealId);
+
+      // Перевіряємо чи набралось достатньо людей
+      if (updatedDeal.current_people >= updatedDeal.min_people && updatedDeal.status === 'active') {
+        // Активуємо акцію
+        await db.updateDealStatus(dealId, 'activated');
+        // Активуємо всі бронювання
+        await db.activateDealBookings(dealId);
+        
+        // Оновлюємо бронювання
+        const activatedBooking = await db.getBookingByCode(code);
+        
+        await ctx.editMessageText(getCodeActivatedMessage(activatedBooking, updatedDeal), {
+          parse_mode: 'HTML',
+          reply_markup: activatedCodeInlineKeyboard(activatedBooking).reply_markup,
+        });
+      } else {
+        // Показуємо повідомлення про приєднання
+        await ctx.editMessageText(getAfterJoinMessage(updatedDeal), {
+          parse_mode: 'HTML',
+          reply_markup: afterJoinInlineKeyboard(dealId).reply_markup,
+        });
+      }
+      
+      await ctx.answerCbQuery('🎉 Ти приєднався!');
+    } catch (error) {
+      console.error('Error in deal join:', error);
+      await ctx.answerCbQuery('Помилка. Спробуй ще раз.');
+    }
+  });
+
+  // Поділитися акцією
+  bot.action(/deal_share_(\d+)/, async (ctx) => {
+    try {
+      const dealId = parseInt(ctx.match[1]);
+      const deal = await db.getDealById(dealId);
+      
+      if (!deal) {
+        await ctx.answerCbQuery('Пропозицію не знайдено');
+        return;
+      }
+
+      const botInfo = await ctx.telegram.getMe();
+      const referralLink = generateReferralLink(botInfo.username, dealId, ctx.from.id);
+      
+      const shareMessage = `🎁 Подивись яка класна знижка!\n\n${deal.businesses?.categories?.emoji || ''} ${deal.title}\n🏪 ${deal.businesses?.name}\n💰 Всього ${deal.discount_price} грн замість ${deal.original_price} грн!\n\n👉 ${referralLink}`;
+
+      await ctx.answerCbQuery();
+      await ctx.reply(
+        `📤 <b>Поділись з друзями!</b>\n\nСкопіюй це повідомлення та надішли друзям:\n\n<code>${shareMessage}</code>`,
+        { parse_mode: 'HTML' }
+      );
+    } catch (error) {
+      console.error('Error in deal share:', error);
+      await ctx.answerCbQuery('Помилка. Спробуй ще раз.');
+    }
+  });
+
+  // Назад до списку
+  bot.action('deals_back', async (ctx) => {
+    try {
+      await ctx.answerCbQuery();
+      await ctx.reply('Обери категорію або подивись гарячі пропозиції 👇', {
+        reply_markup: mainMenuKeyboard.reply_markup,
+      });
+    } catch (error) {
+      console.error('Error in deals back:', error);
+      await ctx.answerCbQuery('Помилка');
+    }
+  });
+
+  // Головне меню
+  bot.action('main_menu', async (ctx) => {
+    try {
+      await ctx.answerCbQuery();
+      const user = await db.getUserByTelegramId(ctx.from.id);
+      const cityName = user?.cities?.name || 'Твоє місто';
+      
+      await ctx.reply(`📍 ${cityName}\n\nОбери категорію або подивись гарячі пропозиції 👇`, {
+        parse_mode: 'HTML',
+        reply_markup: mainMenuKeyboard.reply_markup,
+      });
+    } catch (error) {
+      console.error('Error in main menu:', error);
+      await ctx.answerCbQuery('Помилка');
+    }
+  });
+
+  // Кнопка "Назад"
+  bot.hears('🔙 Назад', async (ctx) => {
+    try {
+      const user = await db.getUserByTelegramId(ctx.from.id);
+      const cityName = user?.cities?.name || 'Твоє місто';
+      
+      await ctx.reply(`📍 ${cityName}\n\nОбери категорію або подивись гарячі пропозиції 👇`, {
+        parse_mode: 'HTML',
+        reply_markup: mainMenuKeyboard.reply_markup,
+      });
+    } catch (error) {
+      console.error('Error in back button:', error);
+      await ctx.reply(getErrorMessage(), { parse_mode: 'HTML' });
+    }
+  });
+
+  // Головне меню (текстова кнопка)
+  bot.hears('🏠 Головне меню', async (ctx) => {
+    try {
+      const user = await db.getUserByTelegramId(ctx.from.id);
+      const cityName = user?.cities?.name || 'Твоє місто';
+      
+      await ctx.reply(`📍 ${cityName}\n\nОбери категорію або подивись гарячі пропозиції 👇`, {
+        parse_mode: 'HTML',
+        reply_markup: mainMenuKeyboard.reply_markup,
+      });
+    } catch (error) {
+      console.error('Error in home button:', error);
+      await ctx.reply(getErrorMessage(), { parse_mode: 'HTML' });
+    }
+  });
+};
+
