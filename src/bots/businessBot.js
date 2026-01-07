@@ -92,14 +92,9 @@ export const createBusinessBot = () => {
  * Запуск бота бізнесу
  */
 export const launchBusinessBot = async (bot) => {
-  if (!bot) {
-    console.error('❌ Business Bot is null, skipping launch');
-    return;
-  }
+  if (!bot) return;
 
   try {
-    console.log('[BusinessBot] Setting up commands...');
-    
     // Налаштування меню команд
     await bot.telegram.setMyCommands([
       { command: 'start', description: 'Головне меню' },
@@ -109,14 +104,11 @@ export const launchBusinessBot = async (bot) => {
       { command: 'stats', description: 'Статистика' },
       { command: 'help', description: 'Допомога' },
     ]);
-    
-    console.log('[BusinessBot] Commands set, launching...');
 
     await bot.launch();
     console.log('✅ Business Bot запущено!');
   } catch (error) {
-    console.error('❌ Помилка запуску Business Bot:', error.message);
-    console.error('   Full error:', error);
+    console.error('❌ Помилка запуску Business Bot:', error);
   }
 };
 
