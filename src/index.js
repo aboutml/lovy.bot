@@ -7,12 +7,18 @@ import { startDealActivatorJob } from './jobs/dealActivator.js';
 import { startReviewRequesterJob } from './jobs/reviewRequester.js';
 import { startReminderSenderJob } from './jobs/reminderSender.js';
 
-console.log('🚀 Запуск Лови Bot...');
+console.log('🚀 Запуск Lovy Bot...');
 console.log(`   Environment: ${config.app.nodeEnv}`);
+console.log(`   User Bot Token: ${config.telegram.userBotToken ? '✅ Set' : '❌ Missing'}`);
+console.log(`   Business Bot Token: ${config.telegram.businessBotToken ? '✅ Set' : '❌ Missing'}`);
+console.log(`   Supabase URL: ${config.supabase.url ? '✅ Set' : '❌ Missing'}`);
 
 // Створюємо боти
 const userBot = createUserBot();
+console.log(`   User Bot: ${userBot ? '✅ Created' : '❌ Failed'}`);
+
 const businessBot = createBusinessBot();
+console.log(`   Business Bot: ${businessBot ? '✅ Created' : '❌ Failed'}`);
 
 // Встановлюємо боти в сервіс сповіщень
 notificationService.setBots(userBot, businessBot);
@@ -24,15 +30,23 @@ startWebhookServer(webhookApp);
 // Запускаємо боти
 const startBots = async () => {
   try {
-    // Запускаємо боти в режимі polling (для розробки)
-    // Для продакшену використовуйте webhook
+    // Запускаємо боти ПАРАЛЕЛЬНО (launch() не завершується, тримає polling)
+    const launches = [];
+    
     if (userBot) {
-      await launchUserBot(userBot);
+      launches.push(launchUserBot(userBot));
     }
     
     if (businessBot) {
-      await launchBusinessBot(businessBot);
+      launches.push(launchBusinessBot(businessBot));
     }
+
+    // Не чекаємо на завершення - вони працюють вічно
+    // Просто даємо їм час на ініціалізацію
+    await Promise.race([
+      Promise.all(launches),
+      new Promise(resolve => setTimeout(resolve, 5000)) // 5 сек на старт
+    ]);
 
     // Запускаємо фонові задачі
     startDealActivatorJob();
@@ -41,7 +55,7 @@ const startBots = async () => {
 
     console.log('');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('✅ Лови Bot успішно запущено!');
+    console.log('✅ Lovy Bot успішно запущено!');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('');
   } catch (error) {
