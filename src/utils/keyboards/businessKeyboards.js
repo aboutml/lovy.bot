@@ -87,7 +87,6 @@ export const cancelKeyboard = Markup.keyboard([
  */
 export const businessDealCardKeyboard = (dealId) => Markup.inlineKeyboard([
   [Markup.button.callback('📊 Детальна статистика', `biz_deal_stats_${dealId}`)],
-  [Markup.button.callback('✏️ Редагувати', `biz_deal_edit_${dealId}`)],
   [Markup.button.callback('❌ Завершити достроково', `biz_deal_end_${dealId}`)],
 ]);
 

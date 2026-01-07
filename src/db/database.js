@@ -456,11 +456,11 @@ export class Database {
       .eq('code', code.toUpperCase())
       .single();
     
-    if (error) {
+    // PGRST116 = код не знайдено (нормальна ситуація)
+    if (error && error.code !== 'PGRST116') {
       console.error('Error getting booking by code:', error);
-      return null;
     }
-    return data;
+    return data || null;
   }
 
   async getUserBooking(userId, dealId) {
