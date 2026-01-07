@@ -160,7 +160,15 @@ export const registerBusinessDealsHandlers = (bot) => {
       await db.updateBusinessState(ctx.from.id, 'idle', {});
 
       await ctx.answerCbQuery('✅ Опубліковано!');
-      await ctx.editMessageText(getDealPublishedMessage(deal), {
+      
+      // Видаляємо попереднє повідомлення і відправляємо нове з Reply Keyboard
+      try {
+        await ctx.deleteMessage();
+      } catch (e) {
+        // Ігноруємо помилку видалення
+      }
+      
+      await ctx.reply(getDealPublishedMessage(deal), {
         parse_mode: 'HTML',
         reply_markup: businessMainMenuKeyboard.reply_markup,
       });
