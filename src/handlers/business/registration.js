@@ -41,7 +41,7 @@ export const registerBusinessRegistrationHandlers = (bot) => {
       
       // Перевіряємо чи вже зареєстрований
       const existing = await db.getBusinessByTelegramId(ctx.from.id);
-      if (existing) {
+      if (existing && existing.name) {
         await ctx.editMessageText(getBizMainMenuMessage(existing), {
           parse_mode: 'HTML',
           reply_markup: businessMainMenuKeyboard.reply_markup,
@@ -49,8 +49,15 @@ export const registerBusinessRegistrationHandlers = (bot) => {
         return;
       }
 
-      // Починаємо реєстрацію
-      await db.updateBusinessState(ctx.from.id, 'registering_name', {});
+      // Створюємо порожній запис бізнесу зі станом реєстрації
+      if (!existing) {
+        await db.createBusiness(ctx.from.id, { 
+          state: 'registering_name',
+          state_data: {} 
+        });
+      } else {
+        await db.updateBusinessState(ctx.from.id, 'registering_name', {});
+      }
       
       await ctx.reply(getBizRegistrationSteps.name, {
         parse_mode: 'HTML',
@@ -163,8 +170,8 @@ export const handleRegistrationText = async (ctx, business) => {
         return true;
       }
       
-      // Створюємо запис бізнесу з назвою
-      await db.createBusiness(ctx.from.id, { name: text });
+      // Оновлюємо запис бізнесу з назвою
+      await db.updateBusiness(ctx.from.id, { name: text });
       await db.updateBusinessState(ctx.from.id, 'registering_category', { name: text });
       
       await ctx.reply(getBizRegistrationSteps.category, {
