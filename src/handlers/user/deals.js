@@ -225,12 +225,22 @@ export const registerDealsHandlers = (bot) => {
       const botInfo = await ctx.telegram.getMe();
       const referralLink = generateReferralLink(botInfo.username, dealId, ctx.from.id);
       
-      const shareMessage = `🎁 Подивись яка класна знижка!\n\n${deal.businesses?.categories?.emoji || ''} ${deal.title}\n🏪 ${deal.businesses?.name}\n💰 Всього ${deal.discount_price} грн замість ${deal.original_price} грн!\n\n👉 ${referralLink}`;
+      const shareText = `🎁 Подивись яка класна знижка!\n\n${deal.businesses?.categories?.emoji || ''} ${deal.title}\n🏪 ${deal.businesses?.name}\n💰 Всього ${deal.discount_price} грн замість ${deal.original_price} грн!`;
+      
+      // Формуємо URL для нативного шерінгу Telegram
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`;
 
       await ctx.answerCbQuery();
       await ctx.reply(
-        `📤 <b>Поділись з друзями!</b>\n\nСкопіюй це повідомлення та надішли друзям:\n\n<code>${shareMessage}</code>`,
-        { parse_mode: 'HTML' }
+        `📤 <b>Поділись з друзями!</b>\n\nНатисни кнопку нижче, щоб надіслати знижку друзям 👇`,
+        { 
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '📨 Надіслати другу', url: shareUrl }]
+            ]
+          }
+        }
       );
     } catch (error) {
       console.error('Error in deal share:', error);
