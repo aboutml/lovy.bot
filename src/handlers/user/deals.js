@@ -54,10 +54,19 @@ export const registerDealsHandlers = (bot) => {
       });
 
       for (const deal of deals) {
-        await ctx.reply(getDealCardMessage(deal), {
-          parse_mode: 'HTML',
-          reply_markup: dealCardInlineKeyboard(deal.id).reply_markup,
-        });
+        const imageUrl = deal.businesses?.image_url;
+        if (imageUrl) {
+          await ctx.replyWithPhoto(imageUrl, {
+            caption: getDealCardMessage(deal),
+            parse_mode: 'HTML',
+            reply_markup: dealCardInlineKeyboard(deal.id).reply_markup,
+          });
+        } else {
+          await ctx.reply(getDealCardMessage(deal), {
+            parse_mode: 'HTML',
+            reply_markup: dealCardInlineKeyboard(deal.id).reply_markup,
+          });
+        }
       }
     } catch (error) {
       console.error('Error in hot deals:', error);
@@ -92,10 +101,19 @@ export const registerDealsHandlers = (bot) => {
       });
 
       for (const deal of deals) {
-        await ctx.reply(getDealCardMessage(deal), {
-          parse_mode: 'HTML',
-          reply_markup: dealCardInlineKeyboard(deal.id).reply_markup,
-        });
+        const imageUrl = deal.businesses?.image_url;
+        if (imageUrl) {
+          await ctx.replyWithPhoto(imageUrl, {
+            caption: getDealCardMessage(deal),
+            parse_mode: 'HTML',
+            reply_markup: dealCardInlineKeyboard(deal.id).reply_markup,
+          });
+        } else {
+          await ctx.reply(getDealCardMessage(deal), {
+            parse_mode: 'HTML',
+            reply_markup: dealCardInlineKeyboard(deal.id).reply_markup,
+          });
+        }
       }
     } catch (error) {
       console.error('Error in category deals:', error);
@@ -118,10 +136,21 @@ export const registerDealsHandlers = (bot) => {
       const existingBooking = await db.getUserBooking(user?.id, dealId);
       const isJoined = !!existingBooking;
 
-      await ctx.editMessageText(getDealDetailsMessage(deal, isJoined), {
-        parse_mode: 'HTML',
-        reply_markup: dealDetailsInlineKeyboard(dealId, isJoined).reply_markup,
-      });
+      const detailsMessage = getDealDetailsMessage(deal, isJoined);
+      const keyboard = dealDetailsInlineKeyboard(dealId, isJoined).reply_markup;
+
+      // Перевіряємо чи це повідомлення з фото
+      if (ctx.callbackQuery.message.photo) {
+        await ctx.editMessageCaption(detailsMessage, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+        });
+      } else {
+        await ctx.editMessageText(detailsMessage, {
+          parse_mode: 'HTML',
+          reply_markup: keyboard,
+        });
+      }
       
       await ctx.answerCbQuery();
     } catch (error) {
@@ -161,10 +190,14 @@ export const registerDealsHandlers = (bot) => {
         
         // Показуємо інформацію про бронювання
         if (existingBooking.status === 'activated') {
-          await ctx.editMessageText(getCodeActivatedMessage(existingBooking, deal), {
-            parse_mode: 'HTML',
-            reply_markup: activatedCodeInlineKeyboard(existingBooking).reply_markup,
-          });
+          const message = getCodeActivatedMessage(existingBooking, deal);
+          const keyboard = activatedCodeInlineKeyboard(existingBooking).reply_markup;
+          
+          if (ctx.callbackQuery.message.photo) {
+            await ctx.editMessageCaption(message, { parse_mode: 'HTML', reply_markup: keyboard });
+          } else {
+            await ctx.editMessageText(message, { parse_mode: 'HTML', reply_markup: keyboard });
+          }
         }
         return;
       }
@@ -182,6 +215,8 @@ export const registerDealsHandlers = (bot) => {
       const updatedDeal = await db.getDealById(dealId);
 
       // Перевіряємо чи набралось достатньо людей
+      const isPhotoMessage = ctx.callbackQuery.message.photo;
+      
       if (updatedDeal.current_people >= updatedDeal.min_people && updatedDeal.status === 'active') {
         // Активуємо акцію
         await db.updateDealStatus(dealId, 'activated');
@@ -191,16 +226,24 @@ export const registerDealsHandlers = (bot) => {
         // Оновлюємо бронювання
         const activatedBooking = await db.getBookingByCode(code);
         
-        await ctx.editMessageText(getCodeActivatedMessage(activatedBooking, updatedDeal), {
-          parse_mode: 'HTML',
-          reply_markup: activatedCodeInlineKeyboard(activatedBooking).reply_markup,
-        });
+        const message = getCodeActivatedMessage(activatedBooking, updatedDeal);
+        const keyboard = activatedCodeInlineKeyboard(activatedBooking).reply_markup;
+        
+        if (isPhotoMessage) {
+          await ctx.editMessageCaption(message, { parse_mode: 'HTML', reply_markup: keyboard });
+        } else {
+          await ctx.editMessageText(message, { parse_mode: 'HTML', reply_markup: keyboard });
+        }
       } else {
         // Показуємо повідомлення про приєднання
-        await ctx.editMessageText(getAfterJoinMessage(updatedDeal), {
-          parse_mode: 'HTML',
-          reply_markup: afterJoinInlineKeyboard(dealId).reply_markup,
-        });
+        const message = getAfterJoinMessage(updatedDeal);
+        const keyboard = afterJoinInlineKeyboard(dealId).reply_markup;
+        
+        if (isPhotoMessage) {
+          await ctx.editMessageCaption(message, { parse_mode: 'HTML', reply_markup: keyboard });
+        } else {
+          await ctx.editMessageText(message, { parse_mode: 'HTML', reply_markup: keyboard });
+        }
       }
       
       await ctx.answerCbQuery('🎉 Ти приєднався!');
