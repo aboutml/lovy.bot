@@ -16,6 +16,7 @@ import {
   skipKeyboard
 } from '../../utils/keyboards/businessKeyboards.js';
 import { isValidPhone, formatPhone } from '../../utils/helpers.js';
+import { uploadTelegramPhoto } from '../../services/storage.js';
 
 /**
  * Реєстрація обробників реєстрації бізнесу
@@ -272,13 +273,24 @@ export const handleRegistrationPhoto = async (ctx, business) => {
     const photo = photos[photos.length - 1];
     const fileId = photo.file_id;
 
-    // Завершуємо реєстрацію з фото (зберігаємо Telegram file_id)
+    // Показуємо повідомлення про завантаження
+    await ctx.reply('⏳ Завантажую фото...');
+
+    // Завантажуємо фото в Supabase Storage
+    const imageUrl = await uploadTelegramPhoto(ctx, fileId);
+
+    if (!imageUrl) {
+      await ctx.reply('❌ Помилка завантаження фото. Спробуй ще раз або пропусти цей крок.');
+      return true;
+    }
+
+    // Завершуємо реєстрацію з URL фото
     await db.updateBusiness(ctx.from.id, {
       category_id: stateData.category_id,
       city_id: stateData.city_id,
       address: stateData.address,
       social_link: stateData.social_link || null,
-      image_url: fileId,
+      image_url: imageUrl,
     });
     
     await db.updateBusinessState(ctx.from.id, 'idle', {});

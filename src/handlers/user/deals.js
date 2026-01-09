@@ -29,6 +29,33 @@ const categoryMapping = {
 };
 
 /**
+ * Відправка картки пропозиції з фото (якщо є) або без
+ */
+const sendDealCard = async (ctx, deal) => {
+  const imageUrl = deal.businesses?.image_url;
+  const message = getDealCardMessage(deal);
+  const keyboard = dealCardInlineKeyboard(deal.id).reply_markup;
+
+  if (imageUrl) {
+    try {
+      await ctx.replyWithPhoto(imageUrl, {
+        caption: message,
+        parse_mode: 'HTML',
+        reply_markup: keyboard,
+      });
+      return;
+    } catch (error) {
+      console.error('Error sending photo, falling back to text:', error.message);
+    }
+  }
+
+  await ctx.reply(message, {
+    parse_mode: 'HTML',
+    reply_markup: keyboard,
+  });
+};
+
+/**
  * Реєстрація обробників акцій
  */
 export const registerDealsHandlers = (bot) => {
@@ -54,19 +81,7 @@ export const registerDealsHandlers = (bot) => {
       });
 
       for (const deal of deals) {
-        const imageUrl = deal.businesses?.image_url;
-        if (imageUrl) {
-          await ctx.replyWithPhoto(imageUrl, {
-            caption: getDealCardMessage(deal),
-            parse_mode: 'HTML',
-            reply_markup: dealCardInlineKeyboard(deal.id).reply_markup,
-          });
-        } else {
-          await ctx.reply(getDealCardMessage(deal), {
-            parse_mode: 'HTML',
-            reply_markup: dealCardInlineKeyboard(deal.id).reply_markup,
-          });
-        }
+        await sendDealCard(ctx, deal);
       }
     } catch (error) {
       console.error('Error in hot deals:', error);
@@ -101,19 +116,7 @@ export const registerDealsHandlers = (bot) => {
       });
 
       for (const deal of deals) {
-        const imageUrl = deal.businesses?.image_url;
-        if (imageUrl) {
-          await ctx.replyWithPhoto(imageUrl, {
-            caption: getDealCardMessage(deal),
-            parse_mode: 'HTML',
-            reply_markup: dealCardInlineKeyboard(deal.id).reply_markup,
-          });
-        } else {
-          await ctx.reply(getDealCardMessage(deal), {
-            parse_mode: 'HTML',
-            reply_markup: dealCardInlineKeyboard(deal.id).reply_markup,
-          });
-        }
+        await sendDealCard(ctx, deal);
       }
     } catch (error) {
       console.error('Error in category deals:', error);
