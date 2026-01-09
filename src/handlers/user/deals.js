@@ -17,7 +17,6 @@ import {
   backKeyboard
 } from '../../utils/keyboards/userKeyboards.js';
 import { generateUniqueCode } from '../../utils/codeGenerator.js';
-import { generateReferralLink } from '../../utils/helpers.js';
 
 // Мапінг категорій
 const categoryMapping = {
@@ -223,21 +222,24 @@ export const registerDealsHandlers = (bot) => {
       }
 
       const botInfo = await ctx.telegram.getMe();
-      const referralLink = generateReferralLink(botInfo.username, dealId, ctx.from.id);
-      
-      const shareText = `🎁 Подивись яка класна знижка!\n\n${deal.businesses?.categories?.emoji || ''} ${deal.title}\n🏪 ${deal.businesses?.name}\n💰 Всього ${deal.discount_price} грн замість ${deal.original_price} грн!`;
-      
-      // Формуємо URL для нативного шерінгу Telegram
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shareText)}`;
+      const botLink = `https://t.me/${botInfo.username}`;
 
       await ctx.answerCbQuery();
       await ctx.reply(
-        `📤 <b>Поділись з друзями!</b>\n\nНатисни кнопку нижче, щоб надіслати знижку друзям 👇`,
+        `📤 <b>Поділись з друзями!</b>\n\n` +
+        `Надішли це повідомлення другу:\n\n` +
+        `━━━━━━━━━━━━━━━\n` +
+        `🎁 Подивись яка класна знижка!\n\n` +
+        `${deal.businesses?.categories?.emoji || ''} ${deal.title}\n` +
+        `🏪 ${deal.businesses?.name}\n` +
+        `💰 Всього ${deal.discount_price} грн замість ${deal.original_price} грн!\n\n` +
+        `👉 ${botLink}\n` +
+        `━━━━━━━━━━━━━━━`,
         { 
           parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [
-              [{ text: '📨 Надіслати другу', url: shareUrl }]
+              [{ text: '🤖 Відкрити бот', url: botLink }]
             ]
           }
         }
