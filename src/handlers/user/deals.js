@@ -232,6 +232,7 @@ export const registerDealsHandlers = (bot) => {
         `🎁 Подивись яка класна знижка!\n\n` +
         `${deal.businesses?.categories?.emoji || ''} ${deal.title}\n` +
         `🏪 ${deal.businesses?.name}\n` +
+        `📍 ${deal.businesses?.cities?.name || ''}\n` +
         `💰 Всього ${deal.discount_price} грн замість ${deal.original_price} грн!\n\n` +
         `👉 ${botLink}\n` +
         `━━━━━━━━━━━━━━━`,
