@@ -45,25 +45,9 @@ export const homeKeyboard = Markup.keyboard([
  * Inline кнопки для картки пропозиції
  */
 export const dealCardInlineKeyboard = (dealId) => Markup.inlineKeyboard([
-  [Markup.button.callback('👀 Детальніше', `deal_view_${dealId}`)],
+  [Markup.button.callback('🙋 Я з вами!', `deal_join_${dealId}`)],
   [Markup.button.callback('📤 Поділитися', `deal_share_${dealId}`)],
 ]);
-
-/**
- * Inline кнопки для детальної пропозиції
- */
-export const dealDetailsInlineKeyboard = (dealId, isJoined = false) => {
-  const buttons = [];
-  
-  if (!isJoined) {
-    buttons.push([Markup.button.callback('🙋 Я з вами!', `deal_join_${dealId}`)]);
-  }
-  
-  buttons.push([Markup.button.callback('📤 Поділитися з другом', `deal_share_${dealId}`)]);
-  buttons.push([Markup.button.callback('🔙 Назад до списку', 'deals_back')]);
-  
-  return Markup.inlineKeyboard(buttons);
-};
 
 /**
  * Inline кнопки після приєднання до пропозиції

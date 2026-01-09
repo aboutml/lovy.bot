@@ -1,20 +1,16 @@
 import { db } from '../../db/database.js';
 import { 
   getDealCardMessage, 
-  getDealDetailsMessage, 
   getAfterJoinMessage,
   getCodeActivatedMessage,
   getNoDealsMessage, 
-  getAlreadyJoinedMessage,
   getErrorMessage 
 } from '../../utils/messages/userMessages.js';
 import { 
   mainMenuKeyboard, 
   dealCardInlineKeyboard, 
-  dealDetailsInlineKeyboard,
   afterJoinInlineKeyboard,
-  activatedCodeInlineKeyboard,
-  backKeyboard
+  activatedCodeInlineKeyboard
 } from '../../utils/keyboards/userKeyboards.js';
 import { generateUniqueCode } from '../../utils/codeGenerator.js';
 
@@ -121,44 +117,6 @@ export const registerDealsHandlers = (bot) => {
     } catch (error) {
       console.error('Error in category deals:', error);
       await ctx.reply(getErrorMessage(), { parse_mode: 'HTML' });
-    }
-  });
-
-  // Детальний перегляд акції
-  bot.action(/deal_view_(\d+)/, async (ctx) => {
-    try {
-      const dealId = parseInt(ctx.match[1]);
-      const deal = await db.getDealById(dealId);
-      
-      if (!deal) {
-        await ctx.answerCbQuery('Пропозицію не знайдено');
-        return;
-      }
-
-      const user = await db.getUserByTelegramId(ctx.from.id);
-      const existingBooking = await db.getUserBooking(user?.id, dealId);
-      const isJoined = !!existingBooking;
-
-      const detailsMessage = getDealDetailsMessage(deal, isJoined);
-      const keyboard = dealDetailsInlineKeyboard(dealId, isJoined).reply_markup;
-
-      // Перевіряємо чи це повідомлення з фото
-      if (ctx.callbackQuery.message.photo) {
-        await ctx.editMessageCaption(detailsMessage, {
-          parse_mode: 'HTML',
-          reply_markup: keyboard,
-        });
-      } else {
-        await ctx.editMessageText(detailsMessage, {
-          parse_mode: 'HTML',
-          reply_markup: keyboard,
-        });
-      }
-      
-      await ctx.answerCbQuery();
-    } catch (error) {
-      console.error('Error in deal view:', error);
-      await ctx.answerCbQuery('Помилка. Спробуй ще раз.');
     }
   });
 
