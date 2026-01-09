@@ -112,12 +112,22 @@ export const getDealPreviewMessage = (dealData) => {
   const discount = calculateDiscount(dealData.original_price, dealData.discount_price);
   const commission = Math.round(dealData.discount_price * config.commission.defaultRate);
   
+  // Форматування терміну
+  let durationText;
+  if (dealData.duration_minutes) {
+    durationText = dealData.duration_minutes >= 60 
+      ? `${dealData.duration_minutes / 60} год` 
+      : `${dealData.duration_minutes} хв ⚡`;
+  } else {
+    durationText = `${dealData.duration_days} днів`;
+  }
+  
   return `📋 <b>Перевір пропозицію:</b>
 
 🏷️ ${escapeHtml(dealData.title)}
 💰 ${formatPrice(dealData.original_price)} → <b>${formatPrice(dealData.discount_price)}</b> (-${discount}%)
 👥 Мінімум: ${dealData.min_people} людей
-⏰ Термін набору: ${dealData.duration_days} днів
+⏰ Термін набору: ${durationText}
 
 ━━━━━━━━━━━━━━━
 <b>Комісія сервісу:</b> ${config.commission.defaultRate * 100}%

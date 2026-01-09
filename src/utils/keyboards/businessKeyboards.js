@@ -44,6 +44,11 @@ export const businessCityKeyboard = Markup.inlineKeyboard([
  */
 export const minPeopleKeyboard = Markup.inlineKeyboard([
   [
+    Markup.button.callback('1 👤', 'deal_minpeople_1'),
+    Markup.button.callback('2 👥', 'deal_minpeople_2'),
+    Markup.button.callback('5', 'deal_minpeople_5'),
+  ],
+  [
     Markup.button.callback('10', 'deal_minpeople_10'),
     Markup.button.callback('15', 'deal_minpeople_15'),
     Markup.button.callback('20', 'deal_minpeople_20'),
@@ -59,6 +64,10 @@ export const minPeopleKeyboard = Markup.inlineKeyboard([
  * Клавіатура вибору терміну дії
  */
 export const durationKeyboard = Markup.inlineKeyboard([
+  [
+    Markup.button.callback('10 хв ⚡', 'deal_duration_min_10'),
+    Markup.button.callback('1 год', 'deal_duration_min_60'),
+  ],
   [
     Markup.button.callback('3 дні', 'deal_duration_3'),
     Markup.button.callback('7 днів', 'deal_duration_7'),

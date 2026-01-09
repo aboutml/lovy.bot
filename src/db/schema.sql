@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS deals (
   business_id BIGINT REFERENCES businesses(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   description TEXT,
+  image_url TEXT,
   original_price INTEGER NOT NULL,
   discount_price INTEGER NOT NULL,
   min_people INTEGER NOT NULL DEFAULT 10,
@@ -109,6 +110,14 @@ CREATE TABLE IF NOT EXISTS deals (
   completed_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Міграція: додати image_url до deals якщо не існує
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'deals' AND column_name = 'image_url') THEN
+    ALTER TABLE deals ADD COLUMN image_url TEXT;
+  END IF;
+END $$;
 
 -- Типи статусів акцій:
 -- 'draft' - чернетка

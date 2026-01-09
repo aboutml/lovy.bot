@@ -279,14 +279,23 @@ export class Database {
   
   async createDeal(businessId, dealData) {
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + (dealData.duration_days || 7));
+    
+    // Підтримка хвилин (для тестування) та днів
+    if (dealData.duration_minutes) {
+      expiresAt.setMinutes(expiresAt.getMinutes() + dealData.duration_minutes);
+    } else {
+      expiresAt.setDate(expiresAt.getDate() + (dealData.duration_days || 7));
+    }
+
+    // Видаляємо duration_minutes перед збереженням (немає такої колонки в БД)
+    const { duration_minutes, ...dataToSave } = dealData;
 
     const { data, error } = await supabase
       .from('deals')
       .insert({
         business_id: businessId,
         expires_at: expiresAt.toISOString(),
-        ...dealData,
+        ...dataToSave,
       })
       .select()
       .single();

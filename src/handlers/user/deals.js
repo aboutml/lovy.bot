@@ -26,9 +26,11 @@ const categoryMapping = {
 
 /**
  * Відправка картки пропозиції з фото (якщо є) або без
+ * Пріоритет: фото пропозиції > фото бізнесу > текст
  */
 const sendDealCard = async (ctx, deal) => {
-  const imageUrl = deal.businesses?.image_url;
+  // Пріоритет: спочатку фото пропозиції, потім фото бізнесу
+  const imageUrl = deal.image_url || deal.businesses?.image_url;
   const message = getDealCardMessage(deal);
   const keyboard = dealCardInlineKeyboard(deal.id).reply_markup;
 

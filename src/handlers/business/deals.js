@@ -160,8 +160,8 @@ export const registerBusinessDealsHandlers = (bot) => {
     }
   });
 
-  // Вибір терміну дії
-  bot.action(/deal_duration_(\d+)/, async (ctx) => {
+  // Вибір терміну дії (дні)
+  bot.action(/deal_duration_(\d+)$/, async (ctx) => {
     try {
       const duration = parseInt(ctx.match[1]);
       const business = await db.getBusinessByTelegramId(ctx.from.id);
@@ -170,6 +170,7 @@ export const registerBusinessDealsHandlers = (bot) => {
       const dealData = {
         ...stateData,
         duration_days: duration,
+        duration_minutes: null,
       };
 
       await db.updateBusinessState(ctx.from.id, 'confirming_deal', dealData);
@@ -181,6 +182,32 @@ export const registerBusinessDealsHandlers = (bot) => {
       });
     } catch (error) {
       console.error('Error in duration selection:', error);
+      await ctx.answerCbQuery('Помилка');
+    }
+  });
+
+  // Вибір терміну дії (хвилини - для тестування)
+  bot.action(/deal_duration_min_(\d+)/, async (ctx) => {
+    try {
+      const minutes = parseInt(ctx.match[1]);
+      const business = await db.getBusinessByTelegramId(ctx.from.id);
+      const stateData = business?.state_data || {};
+      
+      const dealData = {
+        ...stateData,
+        duration_days: null,
+        duration_minutes: minutes,
+      };
+
+      await db.updateBusinessState(ctx.from.id, 'confirming_deal', dealData);
+
+      await ctx.answerCbQuery();
+      await ctx.editMessageText(getDealPreviewMessage(dealData), {
+        parse_mode: 'HTML',
+        reply_markup: dealConfirmKeyboard.reply_markup,
+      });
+    } catch (error) {
+      console.error('Error in minutes duration selection:', error);
       await ctx.answerCbQuery('Помилка');
     }
   });
