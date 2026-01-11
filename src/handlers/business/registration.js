@@ -151,16 +151,6 @@ export const registerBusinessRegistrationHandlers = (bot) => {
     }
   });
 
-  // Пропустити крок (тепер не використовується для реєстрації)
-  bot.hears('⏭️ Пропустити', async (ctx) => {
-    try {
-      // Цей обробник тепер не використовується для реєстрації бізнесу
-      // Залишено для сумісності з іншими флоу
-    } catch (error) {
-      console.error('Error in skip:', error);
-      await ctx.reply(getBizErrorMessage(), { parse_mode: 'HTML' });
-    }
-  });
 };
 
 /**
