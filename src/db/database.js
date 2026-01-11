@@ -256,23 +256,6 @@ export class Database {
     return data;
   }
 
-  async decreaseBusinessTrustScore(businessId, amount = 10) {
-    const { data: business } = await supabase
-      .from('businesses')
-      .select('trust_score')
-      .eq('id', businessId)
-      .single();
-
-    if (!business) return;
-
-    const newScore = Math.max(0, (business.trust_score || 100) - amount);
-    
-    await supabase
-      .from('businesses')
-      .update({ trust_score: newScore })
-      .eq('id', businessId);
-  }
-
   // =============================================
   // DEALS (Акції)
   // =============================================
@@ -669,34 +652,6 @@ export class Database {
       return [];
     }
     return data || [];
-  }
-
-  // =============================================
-  // COMPLAINTS
-  // =============================================
-  
-  async createComplaint(bookingId, userId, businessId, type, description = null) {
-    const { data, error } = await supabase
-      .from('complaints')
-      .insert({
-        booking_id: bookingId,
-        user_id: userId,
-        business_id: businessId,
-        type,
-        description,
-      })
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('Error creating complaint:', error);
-      return null;
-    }
-
-    // Зменшуємо trust score бізнесу
-    await this.decreaseBusinessTrustScore(businessId, 15);
-
-    return data;
   }
 
   // =============================================

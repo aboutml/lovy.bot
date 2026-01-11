@@ -89,7 +89,6 @@ export const getBizMainMenuMessage = (business) => {
 
 📍 ${escapeHtml(business.cities?.name || '')}
 ⭐ Рейтинг: ${business.rating ? business.rating.toFixed(1) : 'Немає відгуків'}
-🔒 Рівень довіри: ${business.trust_score}%
 
 Що робимо далі?`;
 };

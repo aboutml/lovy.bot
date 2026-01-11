@@ -154,7 +154,6 @@ export const registerBusinessCommands = (bot) => {
 
 🏪 ${business.name}
 ⭐ Рейтинг: ${business.rating ? business.rating.toFixed(1) : 'Немає відгуків'} (${business.review_count} відгуків)
-🔒 Рівень довіри: ${business.trust_score}%
 
 ━━━━━━━━━━━━━━━
 📊 <b>Пропозиції:</b>
