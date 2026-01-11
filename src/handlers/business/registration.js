@@ -88,10 +88,13 @@ export const registerBusinessRegistrationHandlers = (bot) => {
         category_id: category.id,
       });
 
+      // Отримуємо активні міста з бази
+      const cities = await db.getAllCities();
+
       await ctx.answerCbQuery();
       await ctx.editMessageText(getBizRegistrationSteps.city, {
         parse_mode: 'HTML',
-        reply_markup: businessCityKeyboard.reply_markup,
+        reply_markup: businessCityKeyboard(cities).reply_markup,
       });
     } catch (error) {
       console.error('Error in category selection:', error);
@@ -99,23 +102,17 @@ export const registerBusinessRegistrationHandlers = (bot) => {
     }
   });
 
-  // Вибір міста
-  bot.action(/biz_city_(\w+)/, async (ctx) => {
+  // Вибір міста (по ID)
+  bot.action(/biz_city_(\d+)/, async (ctx) => {
     try {
-      const citySlug = ctx.match[1];
-      const city = await db.getCityBySlug(citySlug);
-      
-      if (!city) {
-        await ctx.answerCbQuery('Місто не знайдено');
-        return;
-      }
+      const cityId = parseInt(ctx.match[1]);
 
       const business = await db.getBusinessByTelegramId(ctx.from.id);
       const stateData = business?.state_data || {};
       
       await db.updateBusinessState(ctx.from.id, 'registering_address', {
         ...stateData,
-        city_id: city.id,
+        city_id: cityId,
       });
 
       await ctx.answerCbQuery();

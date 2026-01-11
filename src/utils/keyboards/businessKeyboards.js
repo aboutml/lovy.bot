@@ -30,14 +30,15 @@ export const categorySelectionKeyboard = Markup.inlineKeyboard([
 ]);
 
 /**
- * Клавіатура вибору міста для бізнесу
+ * Генерує клавіатуру вибору міста для бізнесу (динамічно з бази)
+ * @param {Array} cities - масив міст з бази даних
  */
-export const businessCityKeyboard = Markup.inlineKeyboard([
-  [Markup.button.callback('📍 Дніпро', 'biz_city_dnipro')],
-  [Markup.button.callback('📍 Київ', 'biz_city_kyiv')],
-  [Markup.button.callback('📍 Львів', 'biz_city_lviv')],
-  [Markup.button.callback('📍 Одеса', 'biz_city_odesa')],
-]);
+export const businessCityKeyboard = (cities) => {
+  const buttons = cities.map(city => 
+    [Markup.button.callback(`📍 ${city.name}`, `biz_city_${city.id}`)]
+  );
+  return Markup.inlineKeyboard(buttons);
+};
 
 /**
  * Клавіатура вибору мінімальної кількості людей

@@ -2,32 +2,27 @@ import { db } from '../../db/database.js';
 import { getCitySelectedMessage, getMainMenuMessage, getErrorMessage } from '../../utils/messages/userMessages.js';
 import { mainMenuKeyboard, citySelectionKeyboard } from '../../utils/keyboards/userKeyboards.js';
 
-// Мапінг тексту кнопок на slug міста
-const cityMapping = {
-  '📍 Дніпро': 'dnipro',
-  '📍 Київ': 'kyiv',
-  '📍 Львів': 'lviv',
-  '📍 Одеса': 'odesa',
-};
-
 /**
  * Реєстрація обробників вибору міста
  */
 export const registerCitySelectionHandlers = (bot) => {
-  // Обробка текстових кнопок вибору міста
-  bot.hears(Object.keys(cityMapping), async (ctx) => {
+  // Обробка текстових кнопок вибору міста (динамічно по назві)
+  bot.hears(/^📍 (.+)$/, async (ctx) => {
     try {
-      const citySlug = cityMapping[ctx.message.text];
+      const cityName = ctx.match[1];
       
-      if (!citySlug) {
+      // Пропускаємо кнопку "Змінити місто" — вона обробляється окремо
+      if (cityName === 'Змінити місто') {
         return;
       }
-
-      const city = await db.getCityBySlug(citySlug);
+      
+      // Шукаємо місто по назві в базі
+      const city = await db.getCityByName(cityName);
       
       if (!city) {
+        const cities = await db.getAllCities();
         await ctx.reply('❌ Місто не знайдено. Спробуй ще раз.', {
-          reply_markup: citySelectionKeyboard.reply_markup,
+          reply_markup: citySelectionKeyboard(cities).reply_markup,
         });
         return;
       }
@@ -49,8 +44,9 @@ export const registerCitySelectionHandlers = (bot) => {
   // Обробка кнопки "Змінити місто"
   bot.hears('📍 Змінити місто', async (ctx) => {
     try {
+      const cities = await db.getAllCities();
       await ctx.reply('Обери нове місто:', {
-        reply_markup: citySelectionKeyboard.reply_markup,
+        reply_markup: citySelectionKeyboard(cities).reply_markup,
       });
     } catch (error) {
       console.error('Error in change city:', error);
@@ -62,8 +58,9 @@ export const registerCitySelectionHandlers = (bot) => {
   bot.action('change_city', async (ctx) => {
     try {
       await ctx.answerCbQuery();
+      const cities = await db.getAllCities();
       await ctx.reply('Обери нове місто:', {
-        reply_markup: citySelectionKeyboard.reply_markup,
+        reply_markup: citySelectionKeyboard(cities).reply_markup,
       });
     } catch (error) {
       console.error('Error in change_city callback:', error);

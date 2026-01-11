@@ -33,6 +33,18 @@ export class Database {
     return data;
   }
 
+  async getCityByName(name) {
+    const { data, error } = await supabase
+      .from('cities')
+      .select('*')
+      .eq('name', name)
+      .eq('is_active', true)
+      .single();
+    
+    if (error) return null;
+    return data;
+  }
+
   // =============================================
   // CATEGORIES
   // =============================================

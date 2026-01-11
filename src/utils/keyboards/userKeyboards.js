@@ -1,12 +1,21 @@
 import { Markup } from 'telegraf';
 
 /**
- * Клавіатура вибору міста
+ * Генерує клавіатуру вибору міста (динамічно з бази)
+ * @param {Array} cities - масив міст з бази даних
  */
-export const citySelectionKeyboard = Markup.keyboard([
-  ['📍 Дніпро', '📍 Київ'],
-  ['📍 Львів', '📍 Одеса'],
-]).resize();
+export const citySelectionKeyboard = (cities) => {
+  // Групуємо по 2 міста в ряд
+  const buttons = [];
+  for (let i = 0; i < cities.length; i += 2) {
+    const row = [`📍 ${cities[i].name}`];
+    if (cities[i + 1]) {
+      row.push(`📍 ${cities[i + 1].name}`);
+    }
+    buttons.push(row);
+  }
+  return Markup.keyboard(buttons).resize();
+};
 
 /**
  * Головне меню користувача

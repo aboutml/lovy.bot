@@ -45,9 +45,10 @@ export const registerUserCommands = (bot) => {
         });
       } else {
         // Немає міста - показуємо вибір міста
+        const cities = await db.getAllCities();
         await ctx.reply(getWelcomeMessage(user.first_name), {
           parse_mode: 'HTML',
-          reply_markup: citySelectionKeyboard.reply_markup,
+          reply_markup: citySelectionKeyboard(cities).reply_markup,
         });
       }
     } catch (error) {
