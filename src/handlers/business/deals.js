@@ -14,9 +14,11 @@ import {
   durationKeyboard,
   dealConfirmKeyboard,
   businessDealCardKeyboard,
-  cancelKeyboard
+  cancelKeyboard,
+  skipKeyboard
 } from '../../utils/keyboards/businessKeyboards.js';
 import { isAdmin } from '../../utils/helpers.js';
+import { uploadTelegramPhoto } from '../../services/storage.js';
 
 /**
  * Реєстрація обробників створення/управління пропозиціями
@@ -168,18 +170,18 @@ export const registerBusinessDealsHandlers = (bot) => {
       const business = await db.getBusinessByTelegramId(ctx.from.id);
       const stateData = business?.state_data || {};
       
-      const dealData = {
+      await db.updateBusinessState(ctx.from.id, 'creating_deal_photo', {
         ...stateData,
         duration_days: duration,
         duration_minutes: null,
-      };
-
-      await db.updateBusinessState(ctx.from.id, 'confirming_deal', dealData);
+      });
 
       await ctx.answerCbQuery();
-      await ctx.editMessageText(getDealPreviewMessage(dealData), {
+      await ctx.editMessageText(getDealCreationSteps.photo, {
         parse_mode: 'HTML',
-        reply_markup: dealConfirmKeyboard.reply_markup,
+      });
+      await ctx.reply('Надішли фото або натисни "Пропустити" 👇', {
+        reply_markup: skipKeyboard.reply_markup,
       });
     } catch (error) {
       console.error('Error in duration selection:', error);
@@ -194,22 +196,42 @@ export const registerBusinessDealsHandlers = (bot) => {
       const business = await db.getBusinessByTelegramId(ctx.from.id);
       const stateData = business?.state_data || {};
       
-      const dealData = {
+      await db.updateBusinessState(ctx.from.id, 'creating_deal_photo', {
         ...stateData,
         duration_days: null,
         duration_minutes: minutes,
-      };
-
-      await db.updateBusinessState(ctx.from.id, 'confirming_deal', dealData);
+      });
 
       await ctx.answerCbQuery();
-      await ctx.editMessageText(getDealPreviewMessage(dealData), {
+      await ctx.editMessageText(getDealCreationSteps.photo, {
         parse_mode: 'HTML',
-        reply_markup: dealConfirmKeyboard.reply_markup,
+      });
+      await ctx.reply('Надішли фото або натисни "Пропустити" 👇', {
+        reply_markup: skipKeyboard.reply_markup,
       });
     } catch (error) {
       console.error('Error in minutes duration selection:', error);
       await ctx.answerCbQuery('Помилка');
+    }
+  });
+
+  // Пропустити фото
+  bot.hears('⏭️ Пропустити', async (ctx) => {
+    try {
+      const business = await db.getBusinessByTelegramId(ctx.from.id);
+      
+      if (business?.state !== 'creating_deal_photo') return;
+      
+      const stateData = business?.state_data || {};
+      
+      await db.updateBusinessState(ctx.from.id, 'confirming_deal', stateData);
+
+      await ctx.reply(getDealPreviewMessage(stateData), {
+        parse_mode: 'HTML',
+        reply_markup: dealConfirmKeyboard.reply_markup,
+      });
+    } catch (error) {
+      console.error('Error in skip photo:', error);
     }
   });
 
@@ -230,7 +252,9 @@ export const registerBusinessDealsHandlers = (bot) => {
         original_price: stateData.original_price,
         discount_price: stateData.discount_price,
         min_people: stateData.min_people || 10,
-        duration_days: stateData.duration_days || 7,
+        duration_days: stateData.duration_days,
+        duration_minutes: stateData.duration_minutes,
+        image_url: stateData.image_url || null,
       });
 
       if (!deal) {
@@ -445,6 +469,59 @@ export const handleDealCreationText = async (ctx, business) => {
 
     default:
       return false;
+  }
+};
+
+/**
+ * Обробка фото при створенні пропозиції
+ */
+export const handleDealPhoto = async (ctx, business) => {
+  const state = business?.state;
+  const stateData = business?.state_data || {};
+
+  if (state !== 'creating_deal_photo') {
+    return false;
+  }
+
+  try {
+    // Отримуємо найбільше фото
+    const photos = ctx.message.photo;
+    const photo = photos[photos.length - 1];
+    const fileId = photo.file_id;
+
+    // Показуємо повідомлення про завантаження
+    await ctx.reply('⏳ Завантажую фото...');
+
+    // Завантажуємо фото в Supabase Storage
+    const imageUrl = await uploadTelegramPhoto(ctx, fileId);
+
+    if (!imageUrl) {
+      await ctx.reply('❌ Помилка завантаження фото. Спробуй ще раз або пропусти цей крок.', {
+        reply_markup: skipKeyboard.reply_markup,
+      });
+      return true;
+    }
+
+    // Зберігаємо URL фото і переходимо до підтвердження
+    const dealData = {
+      ...stateData,
+      image_url: imageUrl,
+    };
+
+    await db.updateBusinessState(ctx.from.id, 'confirming_deal', dealData);
+
+    await ctx.reply(getDealPreviewMessage(dealData), {
+      parse_mode: 'HTML',
+      reply_markup: dealConfirmKeyboard.reply_markup,
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error handling deal photo:', error);
+    await ctx.reply('❌ Помилка завантаження фото. Спробуй ще раз або пропусти цей крок.', {
+      reply_markup: skipKeyboard.reply_markup,
+    });
+    return true;
   }
 };
 

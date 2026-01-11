@@ -4,7 +4,9 @@ import { config } from '../config.js';
  * Перевірка чи користувач є адміном
  */
 export const isAdmin = (userId) => {
-  return config.admin.userIds.includes(userId);
+  // Конвертуємо в число для порівняння (Telegram ID може бути BigInt)
+  const userIdNum = Number(userId);
+  return config.admin.userIds.includes(userIdNum);
 };
 
 /**

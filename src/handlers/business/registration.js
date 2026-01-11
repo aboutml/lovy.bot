@@ -12,11 +12,9 @@ import {
   businessMainMenuKeyboard,
   categorySelectionKeyboard,
   businessCityKeyboard,
-  cancelKeyboard,
-  skipKeyboard
+  cancelKeyboard
 } from '../../utils/keyboards/businessKeyboards.js';
 import { isValidPhone, formatPhone, isValidSocialLink } from '../../utils/helpers.js';
-import { uploadTelegramPhoto } from '../../services/storage.js';
 
 /**
  * Реєстрація обробників реєстрації бізнесу
@@ -156,31 +154,11 @@ export const registerBusinessRegistrationHandlers = (bot) => {
     }
   });
 
-  // Пропустити крок (для опціональних полів)
+  // Пропустити крок (тепер не використовується для реєстрації)
   bot.hears('⏭️ Пропустити', async (ctx) => {
     try {
-      const business = await db.getBusinessByTelegramId(ctx.from.id);
-      const state = business?.state;
-      const stateData = business?.state_data || {};
-
-      if (state === 'registering_photo') {
-        // Завершуємо реєстрацію без фото
-        await db.updateBusiness(ctx.from.id, {
-          category_id: stateData.category_id,
-          city_id: stateData.city_id,
-          address: stateData.address,
-          social_link: stateData.social_link || null,
-        });
-        
-        await db.updateBusinessState(ctx.from.id, 'idle', {});
-        
-        const updatedBusiness = await db.getBusinessByTelegramId(ctx.from.id);
-        
-        await ctx.reply(getBizRegistrationCompleteMessage(updatedBusiness), {
-          parse_mode: 'HTML',
-          reply_markup: businessMainMenuKeyboard.reply_markup,
-        });
-      }
+      // Цей обробник тепер не використовується для реєстрації бізнесу
+      // Залишено для сумісності з іншими флоу
     } catch (error) {
       console.error('Error in skip:', error);
       await ctx.reply(getBizErrorMessage(), { parse_mode: 'HTML' });
@@ -242,73 +220,26 @@ export const handleRegistrationText = async (ctx, business) => {
       // Зберігаємо нормалізоване значення (якщо є)
       const socialLink = socialValidation.normalized || text;
       
-      await db.updateBusinessState(ctx.from.id, 'registering_photo', {
-        ...stateData,
+      // Завершуємо реєстрацію
+      await db.updateBusiness(ctx.from.id, {
+        category_id: stateData.category_id,
+        city_id: stateData.city_id,
+        address: stateData.address,
         social_link: socialLink,
       });
       
-      await ctx.reply(getBizRegistrationSteps.photo, {
+      await db.updateBusinessState(ctx.from.id, 'idle', {});
+      
+      const updatedBusiness = await db.getBusinessByTelegramId(ctx.from.id);
+      
+      await ctx.reply(getBizRegistrationCompleteMessage(updatedBusiness), {
         parse_mode: 'HTML',
-        reply_markup: skipKeyboard.reply_markup,
+        reply_markup: businessMainMenuKeyboard.reply_markup,
       });
       return true;
 
     default:
       return false;
-  }
-};
-
-/**
- * Обробка фото при реєстрації
- * Зберігаємо Telegram file_id - фото зберігається на серверах Telegram безкоштовно
- */
-export const handleRegistrationPhoto = async (ctx, business) => {
-  const state = business?.state;
-  const stateData = business?.state_data || {};
-
-  if (state !== 'registering_photo') {
-    return false;
-  }
-
-  try {
-    // Отримуємо найбільше фото
-    const photos = ctx.message.photo;
-    const photo = photos[photos.length - 1];
-    const fileId = photo.file_id;
-
-    // Показуємо повідомлення про завантаження
-    await ctx.reply('⏳ Завантажую фото...');
-
-    // Завантажуємо фото в Supabase Storage
-    const imageUrl = await uploadTelegramPhoto(ctx, fileId);
-
-    if (!imageUrl) {
-      await ctx.reply('❌ Помилка завантаження фото. Спробуй ще раз або пропусти цей крок.');
-      return true;
-    }
-
-    // Завершуємо реєстрацію з URL фото
-    await db.updateBusiness(ctx.from.id, {
-      category_id: stateData.category_id,
-      city_id: stateData.city_id,
-      address: stateData.address,
-      social_link: stateData.social_link || null,
-      image_url: imageUrl,
-    });
-    
-    await db.updateBusinessState(ctx.from.id, 'idle', {});
-    
-    const updatedBusiness = await db.getBusinessByTelegramId(ctx.from.id);
-    
-    await ctx.reply(getBizRegistrationCompleteMessage(updatedBusiness), {
-      parse_mode: 'HTML',
-      reply_markup: businessMainMenuKeyboard.reply_markup,
-    });
-    return true;
-  } catch (error) {
-    console.error('Error handling photo:', error);
-    await ctx.reply('❌ Помилка завантаження фото. Спробуй ще раз або пропусти цей крок.');
-    return true;
   }
 };
 

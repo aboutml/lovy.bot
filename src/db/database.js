@@ -304,7 +304,7 @@ export class Database {
     return data;
   }
 
-  async getActiveDeals(cityId, categorySlug = null, limit = 10) {
+  async getActiveDeals(cityId, categorySlug = null, limit = 10, userId = null) {
     let query = supabase
       .from('deals')
       .select('*, businesses!inner(*, cities(*), categories(*))')
@@ -324,10 +324,18 @@ export class Database {
       console.error('Error getting active deals:', error);
       return [];
     }
+    
+    // Фільтруємо пропозиції, до яких користувач вже приєднався
+    if (userId && data) {
+      const userBookings = await this.getUserBookings(userId);
+      const joinedDealIds = userBookings.map(b => b.deal_id);
+      return data.filter(deal => !joinedDealIds.includes(deal.id));
+    }
+    
     return data || [];
   }
 
-  async getHotDeals(cityId, limit = 5) {
+  async getHotDeals(cityId, limit = 5, userId = null) {
     // Гарячі - ті що майже набрали мінімум
     const { data, error } = await supabase
       .from('deals')
@@ -342,6 +350,14 @@ export class Database {
       console.error('Error getting hot deals:', error);
       return [];
     }
+    
+    // Фільтруємо пропозиції, до яких користувач вже приєднався
+    if (userId && data) {
+      const userBookings = await this.getUserBookings(userId);
+      const joinedDealIds = userBookings.map(b => b.deal_id);
+      return data.filter(deal => !joinedDealIds.includes(deal.id));
+    }
+    
     return data || [];
   }
 

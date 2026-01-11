@@ -26,11 +26,9 @@ const categoryMapping = {
 
 /**
  * Відправка картки пропозиції з фото (якщо є) або без
- * Пріоритет: фото пропозиції > фото бізнесу > текст
  */
 const sendDealCard = async (ctx, deal) => {
-  // Пріоритет: спочатку фото пропозиції, потім фото бізнесу
-  const imageUrl = deal.image_url || deal.businesses?.image_url;
+  const imageUrl = deal.image_url;
   const message = getDealCardMessage(deal);
   const keyboard = dealCardInlineKeyboard(deal.id).reply_markup;
 
@@ -67,7 +65,7 @@ export const registerDealsHandlers = (bot) => {
         return;
       }
 
-      const deals = await db.getHotDeals(user.city_id, 5);
+      const deals = await db.getHotDeals(user.city_id, 5, user.id);
       
       if (deals.length === 0) {
         await ctx.reply(getNoDealsMessage(), { parse_mode: 'HTML' });
@@ -102,7 +100,7 @@ export const registerDealsHandlers = (bot) => {
       }
 
       const category = await db.getCategoryBySlug(categorySlug);
-      const deals = await db.getActiveDeals(user.city_id, categorySlug, 10);
+      const deals = await db.getActiveDeals(user.city_id, categorySlug, 10, user.id);
       
       if (deals.length === 0) {
         await ctx.reply(getNoDealsMessage(category?.name), { parse_mode: 'HTML' });

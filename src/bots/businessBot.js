@@ -1,8 +1,8 @@
 import { Telegraf } from 'telegraf';
 import { config } from '../config.js';
 import { registerBusinessCommands } from '../handlers/business/commands.js';
-import { registerBusinessRegistrationHandlers, handleRegistrationText, handleRegistrationPhoto } from '../handlers/business/registration.js';
-import { registerBusinessDealsHandlers, handleDealCreationText } from '../handlers/business/deals.js';
+import { registerBusinessRegistrationHandlers, handleRegistrationText } from '../handlers/business/registration.js';
+import { registerBusinessDealsHandlers, handleDealCreationText, handleDealPhoto } from '../handlers/business/deals.js';
 import { registerVerificationHandlers, handleCodeVerificationText, verifyCodeDirectly } from '../handlers/business/verification.js';
 import { db } from '../db/database.js';
 import { getBizMainMenuMessage, getBizErrorMessage } from '../utils/messages/businessMessages.js';
@@ -86,13 +86,13 @@ export const createBusinessBot = () => {
     }
   });
 
-  // Обробка фото (для реєстрації бізнесу)
+  // Обробка фото (для створення пропозиції)
   bot.on('photo', async (ctx) => {
     try {
       const business = await db.getBusinessByTelegramId(ctx.from.id);
       
-      if (business?.state === 'registering_photo') {
-        await handleRegistrationPhoto(ctx, business);
+      if (business?.state === 'creating_deal_photo') {
+        await handleDealPhoto(ctx, business);
       }
     } catch (error) {
       console.error('[BusinessBot] Error handling photo:', error);
