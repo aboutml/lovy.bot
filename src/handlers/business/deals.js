@@ -200,6 +200,8 @@ export const registerBusinessDealsHandlers = (bot) => {
         ...stateData,
         duration_days: null,
         duration_minutes: minutes,
+        // Для тестових акцій — короткий термін дії коду (1 день)
+        validity_days: 1,
       });
 
       await ctx.answerCbQuery();
@@ -247,15 +249,20 @@ export const registerBusinessDealsHandlers = (bot) => {
       }
 
       // Створюємо пропозицію
-      const deal = await db.createDeal(business.id, {
+      const dealData = {
         title: stateData.title,
         original_price: stateData.original_price,
         discount_price: stateData.discount_price,
         min_people: stateData.min_people || 10,
-        duration_days: stateData.duration_days,
-        duration_minutes: stateData.duration_minutes,
         image_url: stateData.image_url || null,
-      });
+      };
+      
+      // Додаємо опціональні поля тільки якщо вони задані
+      if (stateData.duration_days) dealData.duration_days = stateData.duration_days;
+      if (stateData.duration_minutes) dealData.duration_minutes = stateData.duration_minutes;
+      if (stateData.validity_days) dealData.validity_days = stateData.validity_days;
+      
+      const deal = await db.createDeal(business.id, dealData);
 
       if (!deal) {
         await ctx.answerCbQuery('Помилка створення пропозиції');

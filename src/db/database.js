@@ -282,7 +282,7 @@ export class Database {
       expiresAt.setDate(expiresAt.getDate() + (dealData.duration_days || 7));
     }
 
-    // Видаляємо duration_minutes перед збереженням (немає такої колонки в БД)
+    // Видаляємо тимчасові поля перед збереженням (duration_minutes не є колонкою в БД)
     const { duration_minutes, ...dataToSave } = dealData;
 
     const { data, error } = await supabase
