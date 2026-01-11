@@ -3,10 +3,11 @@ import { config } from '../config.js';
 import { registerBusinessCommands } from '../handlers/business/commands.js';
 import { registerBusinessRegistrationHandlers, handleRegistrationText, handleRegistrationPhoto } from '../handlers/business/registration.js';
 import { registerBusinessDealsHandlers, handleDealCreationText } from '../handlers/business/deals.js';
-import { registerVerificationHandlers, handleCodeVerificationText } from '../handlers/business/verification.js';
+import { registerVerificationHandlers, handleCodeVerificationText, verifyCodeDirectly } from '../handlers/business/verification.js';
 import { db } from '../db/database.js';
 import { getBizMainMenuMessage, getBizErrorMessage } from '../utils/messages/businessMessages.js';
 import { businessMainMenuKeyboard, startKeyboard } from '../utils/keyboards/businessKeyboards.js';
+import { looksLikeCode } from '../utils/codeGenerator.js';
 
 /**
  * Створення та налаштування бота для бізнесу
@@ -40,6 +41,12 @@ export const createBusinessBot = () => {
       if (ctx.message.text.startsWith('/')) return;
 
       const business = await db.getBusinessByTelegramId(ctx.from.id);
+      
+      // 🎫 Автоматична перевірка коду якщо повідомлення схоже на код (LOVY-XXXX)
+      if (business && looksLikeCode(ctx.message.text)) {
+        const handled = await verifyCodeDirectly(ctx, business);
+        if (handled) return;
+      }
       
       // Якщо бізнес не зареєстрований і це не кнопка скасування
       if (!business && ctx.message.text !== '❌ Скасувати') {

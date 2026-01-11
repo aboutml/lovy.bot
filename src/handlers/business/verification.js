@@ -119,7 +119,7 @@ export const registerVerificationHandlers = (bot) => {
 };
 
 /**
- * Обробка введення коду
+ * Обробка введення коду (коли бізнес в стані checking_code)
  */
 export const handleCodeVerificationText = async (ctx, business) => {
   const state = business?.state;
@@ -129,10 +129,19 @@ export const handleCodeVerificationText = async (ctx, business) => {
     return false;
   }
 
+  return await verifyCodeDirectly(ctx, business);
+};
+
+/**
+ * Пряма перевірка коду (автоматично, без стану)
+ * Викликається коли бізнес надсилає повідомлення що схоже на код
+ */
+export const verifyCodeDirectly = async (ctx, business) => {
+  const text = ctx.message.text;
   const code = normalizeCode(text);
 
   if (!isValidCodeFormat(code)) {
-    await ctx.reply('❌ Невірний формат коду. Код має бути у форматі LOVY-XXXX.\n\nСпробуй ще раз:');
+    await ctx.reply('❌ Невірний формат коду. Код має бути у форматі LOVY-XXXX.');
     return true;
   }
 
@@ -144,7 +153,6 @@ export const handleCodeVerificationText = async (ctx, business) => {
       parse_mode: 'HTML',
       reply_markup: businessMainMenuKeyboard.reply_markup,
     });
-    await db.updateBusinessState(ctx.from.id, 'idle', {});
     return true;
   }
 
@@ -153,7 +161,6 @@ export const handleCodeVerificationText = async (ctx, business) => {
     await ctx.reply('❌ Цей код не належить твоєму бізнесу.', {
       reply_markup: businessMainMenuKeyboard.reply_markup,
     });
-    await db.updateBusinessState(ctx.from.id, 'idle', {});
     return true;
   }
 
@@ -163,7 +170,6 @@ export const handleCodeVerificationText = async (ctx, business) => {
       parse_mode: 'HTML',
       reply_markup: businessMainMenuKeyboard.reply_markup,
     });
-    await db.updateBusinessState(ctx.from.id, 'idle', {});
     return true;
   }
 
@@ -171,7 +177,6 @@ export const handleCodeVerificationText = async (ctx, business) => {
     await ctx.reply('⚠️ Цей код ще не активований. Акція ще не набрала достатньо учасників.', {
       reply_markup: businessMainMenuKeyboard.reply_markup,
     });
-    await db.updateBusinessState(ctx.from.id, 'idle', {});
     return true;
   }
 
@@ -180,7 +185,6 @@ export const handleCodeVerificationText = async (ctx, business) => {
     await ctx.reply('⚠️ Термін дії цього коду вийшов.', {
       reply_markup: businessMainMenuKeyboard.reply_markup,
     });
-    await db.updateBusinessState(ctx.from.id, 'idle', {});
     return true;
   }
 
@@ -190,7 +194,6 @@ export const handleCodeVerificationText = async (ctx, business) => {
     reply_markup: confirmVisitKeyboard(booking.id).reply_markup,
   });
 
-  await db.updateBusinessState(ctx.from.id, 'idle', {});
   return true;
 };
 

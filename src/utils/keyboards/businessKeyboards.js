@@ -41,39 +41,57 @@ export const businessCityKeyboard = Markup.inlineKeyboard([
 
 /**
  * Клавіатура вибору мінімальної кількості людей
+ * @param {boolean} isAdmin - чи є користувач адміном (показує тестові опції)
  */
-export const minPeopleKeyboard = Markup.inlineKeyboard([
-  [
-    Markup.button.callback('1 👤', 'deal_minpeople_1'),
-    Markup.button.callback('2 👥', 'deal_minpeople_2'),
-    Markup.button.callback('5', 'deal_minpeople_5'),
-  ],
-  [
+export const minPeopleKeyboard = (isAdmin = false) => {
+  const buttons = [];
+  
+  // Тестові опції тільки для адмінів
+  if (isAdmin) {
+    buttons.push([
+      Markup.button.callback('1 👤 (тест)', 'deal_minpeople_1'),
+      Markup.button.callback('2 👥 (тест)', 'deal_minpeople_2'),
+      Markup.button.callback('5', 'deal_minpeople_5'),
+    ]);
+  }
+  
+  buttons.push([
     Markup.button.callback('10', 'deal_minpeople_10'),
     Markup.button.callback('15', 'deal_minpeople_15'),
     Markup.button.callback('20', 'deal_minpeople_20'),
-  ],
-  [
+  ]);
+  buttons.push([
     Markup.button.callback('25', 'deal_minpeople_25'),
     Markup.button.callback('30', 'deal_minpeople_30'),
     Markup.button.callback('50', 'deal_minpeople_50'),
-  ],
-]);
+  ]);
+  
+  return Markup.inlineKeyboard(buttons);
+};
 
 /**
  * Клавіатура вибору терміну дії
+ * @param {boolean} isAdmin - чи є користувач адміном (показує тестові опції)
  */
-export const durationKeyboard = Markup.inlineKeyboard([
-  [
-    Markup.button.callback('10 хв ⚡', 'deal_duration_min_10'),
-    Markup.button.callback('1 год', 'deal_duration_min_60'),
-  ],
-  [
+export const durationKeyboard = (isAdmin = false) => {
+  const buttons = [];
+  
+  // Тестові опції тільки для адмінів
+  if (isAdmin) {
+    buttons.push([
+      Markup.button.callback('10 хв ⚡ (тест)', 'deal_duration_min_10'),
+      Markup.button.callback('1 год (тест)', 'deal_duration_min_60'),
+    ]);
+  }
+  
+  buttons.push([
     Markup.button.callback('3 дні', 'deal_duration_3'),
     Markup.button.callback('7 днів', 'deal_duration_7'),
     Markup.button.callback('14 днів', 'deal_duration_14'),
-  ],
-]);
+  ]);
+  
+  return Markup.inlineKeyboard(buttons);
+};
 
 /**
  * Клавіатура підтвердження пропозиції

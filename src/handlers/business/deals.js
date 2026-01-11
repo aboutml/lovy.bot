@@ -16,6 +16,7 @@ import {
   businessDealCardKeyboard,
   cancelKeyboard
 } from '../../utils/keyboards/businessKeyboards.js';
+import { isAdmin } from '../../utils/helpers.js';
 
 /**
  * Реєстрація обробників створення/управління пропозиціями
@@ -152,7 +153,7 @@ export const registerBusinessDealsHandlers = (bot) => {
       await ctx.answerCbQuery();
       await ctx.editMessageText(getDealCreationSteps.duration, {
         parse_mode: 'HTML',
-        reply_markup: durationKeyboard.reply_markup,
+        reply_markup: durationKeyboard(isAdmin(ctx.from.id)).reply_markup,
       });
     } catch (error) {
       console.error('Error in minpeople selection:', error);
@@ -438,7 +439,7 @@ export const handleDealCreationText = async (ctx, business) => {
       
       await ctx.reply(getDealCreationSteps.minPeople, {
         parse_mode: 'HTML',
-        reply_markup: minPeopleKeyboard.reply_markup,
+        reply_markup: minPeopleKeyboard(isAdmin(ctx.from.id)).reply_markup,
       });
       return true;
 

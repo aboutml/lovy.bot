@@ -47,3 +47,14 @@ export const normalizeCode = (code) => {
   return code.trim().toUpperCase();
 };
 
+/**
+ * Перевірка чи повідомлення схоже на код
+ * (починається з LOVY- або схожого префікса)
+ */
+export const looksLikeCode = (text) => {
+  if (!text) return false;
+  const normalized = text.trim().toUpperCase();
+  const prefix = config.code.prefix;
+  return normalized.startsWith(prefix + '-') || normalized.startsWith(prefix);
+};
+
