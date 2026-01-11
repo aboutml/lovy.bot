@@ -1,7 +1,6 @@
 import { db } from '../../db/database.js';
 import { 
   getThankYouForReviewMessage, 
-  getComplaintReceivedMessage,
   getErrorMessage 
 } from '../../utils/messages/userMessages.js';
 import { 
@@ -65,43 +64,6 @@ export const registerReviewHandlers = (bot) => {
       });
     } catch (error) {
       console.error('Error in review_notused:', error);
-      await ctx.answerCbQuery('Помилка');
-    }
-  });
-
-  // Не обслужили (скарга)
-  bot.action(/review_notserved_(\d+)/, async (ctx) => {
-    try {
-      const bookingId = parseInt(ctx.match[1]);
-      
-      const booking = await db.getBookingByCode(
-        (await db.supabase?.from('bookings').select('code').eq('id', bookingId).single())?.data?.code
-      );
-      
-      if (!booking) {
-        await ctx.answerCbQuery('Бронювання не знайдено');
-        return;
-      }
-
-      const user = await db.getUserByTelegramId(ctx.from.id);
-      const businessId = booking.deals?.businesses?.id;
-
-      // Створюємо скаргу
-      await db.createComplaint(
-        bookingId, 
-        user.id, 
-        businessId, 
-        'not_served', 
-        'Клієнт повідомив що його не обслужили'
-      );
-      
-      await ctx.answerCbQuery();
-      await ctx.editMessageText(getComplaintReceivedMessage(), {
-        parse_mode: 'HTML',
-        reply_markup: mainMenuKeyboard.reply_markup,
-      });
-    } catch (error) {
-      console.error('Error in review_notserved:', error);
       await ctx.answerCbQuery('Помилка');
     }
   });

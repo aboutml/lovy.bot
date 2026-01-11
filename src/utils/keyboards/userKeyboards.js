@@ -81,7 +81,6 @@ export const reviewRequestInlineKeyboard = (bookingId) => Markup.inlineKeyboard(
   [Markup.button.callback('✅ Так, все супер!', `review_good_${bookingId}`)],
   [Markup.button.callback('😐 Так, але є зауваження', `review_ok_${bookingId}`)],
   [Markup.button.callback('❌ Не скористався', `review_notused_${bookingId}`)],
-  [Markup.button.callback('🚫 Мене не обслужили', `review_notserved_${bookingId}`)],
 ]);
 
 /**
@@ -107,21 +106,6 @@ export const profileInlineKeyboard = Markup.inlineKeyboard([
   [Markup.button.callback('📋 Історія', 'my_history')],
   [Markup.button.callback('📍 Змінити місто', 'change_city')],
 ]);
-
-/**
- * Inline кнопки для списку бронювань
- */
-export const bookingItemInlineKeyboard = (bookingId, status) => {
-  const buttons = [];
-  
-  if (status === 'activated') {
-    buttons.push([Markup.button.callback('👁️ Показати код', `booking_show_${bookingId}`)]);
-  }
-  
-  buttons.push([Markup.button.callback('📄 Детальніше', `booking_details_${bookingId}`)]);
-  
-  return Markup.inlineKeyboard(buttons);
-};
 
 /**
  * Пагінація для списків

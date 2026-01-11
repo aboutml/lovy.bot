@@ -6,8 +6,7 @@ import {
 } from '../../utils/messages/userMessages.js';
 import { 
   mainMenuKeyboard, 
-  activatedCodeInlineKeyboard,
-  bookingItemInlineKeyboard
+  activatedCodeInlineKeyboard
 } from '../../utils/keyboards/userKeyboards.js';
 import { formatDate, getStatusEmoji, escapeHtml } from '../../utils/helpers.js';
 
@@ -57,10 +56,7 @@ export const registerBookingHandlers = (bot) => {
           message += `\n✅ Використано`;
         }
 
-        await ctx.reply(message, {
-          parse_mode: 'HTML',
-          reply_markup: bookingItemInlineKeyboard(booking.id, booking.status).reply_markup,
-        });
+        await ctx.reply(message, { parse_mode: 'HTML' });
       }
     } catch (error) {
       console.error('Error in my_bookings:', error);
@@ -150,44 +146,5 @@ export const registerBookingHandlers = (bot) => {
     }
   });
 
-  // Показати код
-  bot.action(/booking_show_(\d+)/, async (ctx) => {
-    try {
-      const bookingId = parseInt(ctx.match[1]);
-      
-      const { data: booking } = await db.supabase
-        ?.from('bookings')
-        .select('*, deals(*, businesses(*))')
-        .eq('id', bookingId)
-        .single();
-      
-      if (!booking) {
-        await ctx.answerCbQuery('Бронювання не знайдено');
-        return;
-      }
-
-      await ctx.answerCbQuery();
-      await ctx.reply(getCodeActivatedMessage(booking, booking.deals), {
-        parse_mode: 'HTML',
-        reply_markup: activatedCodeInlineKeyboard(booking).reply_markup,
-      });
-    } catch (error) {
-      console.error('Error in booking_show:', error);
-      await ctx.answerCbQuery('Помилка. Спробуй ще раз.');
-    }
-  });
-
-  // Деталі бронювання
-  bot.action(/booking_details_(\d+)/, async (ctx) => {
-    try {
-      const bookingId = parseInt(ctx.match[1]);
-      
-      // Тут можна показати детальну інформацію про бронювання
-      await ctx.answerCbQuery('Деталі бронювання');
-    } catch (error) {
-      console.error('Error in booking_details:', error);
-      await ctx.answerCbQuery('Помилка');
-    }
-  });
 };
 

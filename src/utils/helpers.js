@@ -150,6 +150,44 @@ export const formatPhone = (phone) => {
 };
 
 /**
+ * Валідація посилання на соціальну мережу
+ * Дозволені: Instagram, TikTok, Telegram
+ */
+export const isValidSocialLink = (input) => {
+  if (!input || input.length < 2) return { valid: false, error: 'Посилання занадто коротке' };
+  
+  const text = input.trim().toLowerCase();
+  
+  // Дозволені домени
+  const allowedPatterns = [
+    // Instagram
+    /^https?:\/\/(www\.)?instagram\.com\/[\w.]+\/?$/,
+    /^@[\w.]+$/, // @username формат
+    // TikTok
+    /^https?:\/\/(www\.)?(tiktok\.com|vm\.tiktok\.com)\/@?[\w.]+\/?$/,
+    // Telegram
+    /^https?:\/\/(www\.)?(t\.me|telegram\.me)\/[\w]+\/?$/,
+  ];
+  
+  // Перевіряємо чи відповідає одному з дозволених патернів
+  for (const pattern of allowedPatterns) {
+    if (pattern.test(text) || pattern.test(input.trim())) {
+      return { valid: true };
+    }
+  }
+  
+  // Якщо просто нікнейм без @, додаємо підказку
+  if (/^[\w.]+$/.test(text) && text.length >= 2 && text.length <= 30) {
+    return { valid: true, normalized: `@${text}` };
+  }
+  
+  return { 
+    valid: false, 
+    error: '❌ Дозволені тільки посилання на:\n• Instagram (instagram.com/...)\n• TikTok (tiktok.com/...)\n• Telegram (t.me/...)\n• Або нікнейм (@username)' 
+  };
+};
+
+/**
  * Генерація реферального посилання
  */
 export const generateReferralLink = (botUsername, dealId, userId) => {

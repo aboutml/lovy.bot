@@ -15,7 +15,7 @@ import {
   cancelKeyboard,
   skipKeyboard
 } from '../../utils/keyboards/businessKeyboards.js';
-import { isValidPhone, formatPhone } from '../../utils/helpers.js';
+import { isValidPhone, formatPhone, isValidSocialLink } from '../../utils/helpers.js';
 import { uploadTelegramPhoto } from '../../services/storage.js';
 
 /**
@@ -231,17 +231,20 @@ export const handleRegistrationText = async (ctx, business) => {
       return true;
 
     case 'registering_social':
-      // Перевіряємо що це схоже на посилання
-      const isLink = text.startsWith('http://') || text.startsWith('https://') || text.startsWith('@') || text.includes('.com') || text.includes('.ua');
+      // Валідація соц. мережі (тільки Instagram, TikTok, Telegram)
+      const socialValidation = isValidSocialLink(text);
       
-      if (!isLink && text.length > 5) {
-        await ctx.reply('❌ Введи посилання на соц. мережу або нікнейм (@username):');
+      if (!socialValidation.valid) {
+        await ctx.reply(socialValidation.error, { parse_mode: 'HTML' });
         return true;
       }
       
+      // Зберігаємо нормалізоване значення (якщо є)
+      const socialLink = socialValidation.normalized || text;
+      
       await db.updateBusinessState(ctx.from.id, 'registering_photo', {
         ...stateData,
-        social_link: text,
+        social_link: socialLink,
       });
       
       await ctx.reply(getBizRegistrationSteps.photo, {
