@@ -5,13 +5,13 @@ import { delay } from '../utils/helpers.js';
 
 /**
  * Job для запиту відгуків
- * Запускається кожні 30 хвилин
+ * Запускається кожні 5 хвилин
  */
 export const startReviewRequesterJob = () => {
   console.log('[ReviewRequester] Starting job...');
 
-  // Запуск кожні 30 хвилин
-  cron.schedule('*/30 * * * *', async () => {
+  // Запуск кожні 5 хвилин (для тестування)
+  cron.schedule('*/5 * * * *', async () => {
     console.log('[ReviewRequester] Checking for review requests...');
     await requestReviews();
   });

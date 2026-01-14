@@ -658,22 +658,36 @@ export class Database {
 
   async getBookingsForReviewRequest() {
     // Бронювання де бізнес підтвердив, але ще не запитували відгук
-    // і минуло 24 години
-    const oneDayAgo = new Date();
+    const now = new Date();
+    
+    // Для звичайних акцій — 24 години
+    const oneDayAgo = new Date(now);
     oneDayAgo.setHours(oneDayAgo.getHours() - 24);
+    
+    // Для тестових акцій — 5 хвилин
+    const fiveMinutesAgo = new Date(now);
+    fiveMinutesAgo.setMinutes(fiveMinutesAgo.getMinutes() - 5);
 
+    // Спочатку отримуємо всі кандидатів
     const { data, error } = await supabase
       .from('bookings')
       .select('*, users(*), deals(*, businesses(*))')
       .eq('status', 'used')
       .eq('review_requested', false)
-      .lt('business_confirmed_at', oneDayAgo.toISOString());
+      .not('business_confirmed_at', 'is', null);
     
     if (error) {
       console.error('Error getting bookings for review request:', error);
       return [];
     }
-    return data || [];
+    
+    // Фільтруємо: тестові акції (validity_minutes) — 5 хв, звичайні — 24 год
+    return (data || []).filter(booking => {
+      const confirmedAt = new Date(booking.business_confirmed_at);
+      const isTestDeal = booking.deals?.validity_minutes;
+      const threshold = isTestDeal ? fiveMinutesAgo : oneDayAgo;
+      return confirmedAt < threshold;
+    });
   }
 
   async markReviewRequested(bookingId) {
