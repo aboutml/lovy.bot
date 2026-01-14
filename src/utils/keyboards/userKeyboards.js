@@ -87,8 +87,7 @@ export const activatedCodeInlineKeyboard = (booking) => {
  * Inline кнопки для опитування після візиту
  */
 export const reviewRequestInlineKeyboard = (bookingId) => Markup.inlineKeyboard([
-  [Markup.button.callback('✅ Так, все супер!', `review_good_${bookingId}`)],
-  [Markup.button.callback('😐 Так, але є зауваження', `review_ok_${bookingId}`)],
+  [Markup.button.callback('⭐ Залишити відгук', `review_good_${bookingId}`)],
   [Markup.button.callback('❌ Не скористався', `review_notused_${bookingId}`)],
 ]);
 

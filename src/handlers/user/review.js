@@ -3,10 +3,7 @@ import {
   getThankYouForReviewMessage, 
   getErrorMessage 
 } from '../../utils/messages/userMessages.js';
-import { 
-  mainMenuKeyboard, 
-  ratingInlineKeyboard 
-} from '../../utils/keyboards/userKeyboards.js';
+import { ratingInlineKeyboard } from '../../utils/keyboards/userKeyboards.js';
 
 const REVIEW_BONUS_POINTS = 10;
 
@@ -29,27 +26,6 @@ export const registerReviewHandlers = (bot) => {
     }
   });
 
-  // Нейтральний відгук
-  bot.action(/review_ok_(\d+)/, async (ctx) => {
-    try {
-      const bookingId = parseInt(ctx.match[1]);
-      
-      await ctx.answerCbQuery();
-      await ctx.editMessageText('😐 Розкажи детальніше, що саме не сподобалось?\n\nНапиши свій відгук:', {
-        parse_mode: 'HTML',
-      });
-
-      // Зберігаємо стан для очікування текстового відгуку
-      await db.updateUserState(ctx.from.id, 'awaiting_review_text', { 
-        bookingId, 
-        rating: 3 
-      });
-    } catch (error) {
-      console.error('Error in review_ok:', error);
-      await ctx.answerCbQuery('Помилка');
-    }
-  });
-
   // Не скористався
   bot.action(/review_notused_(\d+)/, async (ctx) => {
     try {
@@ -60,7 +36,7 @@ export const registerReviewHandlers = (bot) => {
       
       await ctx.answerCbQuery();
       await ctx.editMessageText('😔 Шкода, що не вдалося скористатися.\n\nМожливо наступного разу! Ми додамо нові пропозиції найближчим часом.', {
-        reply_markup: mainMenuKeyboard.reply_markup,
+        parse_mode: 'HTML',
       });
     } catch (error) {
       console.error('Error in review_notused:', error);
@@ -74,9 +50,7 @@ export const registerReviewHandlers = (bot) => {
       const bookingId = parseInt(ctx.match[1]);
       const rating = parseInt(ctx.match[2]);
       
-      const booking = await db.getBookingByCode(
-        (await db.supabase?.from('bookings').select('code').eq('id', bookingId).single())?.data?.code
-      );
+      const booking = await db.getBookingById(bookingId);
       
       if (!booking) {
         await ctx.answerCbQuery('Бронювання не знайдено');
@@ -103,7 +77,6 @@ export const registerReviewHandlers = (bot) => {
       await ctx.answerCbQuery();
       await ctx.editMessageText(getThankYouForReviewMessage(REVIEW_BONUS_POINTS), {
         parse_mode: 'HTML',
-        reply_markup: mainMenuKeyboard.reply_markup,
       });
     } catch (error) {
       console.error('Error in rate:', error);
