@@ -94,16 +94,16 @@ export const registerBusinessCommands = (bot) => {
         return;
       }
 
-      const deals = await db.getBusinessDeals(business.id);
+      const deals = await db.getBusinessDeals(business.id, true); // тільки активні
       
       if (deals.length === 0) {
-        await ctx.reply('📭 У тебе ще немає пропозицій.\n\nСтвори першу пропозицію командою /new');
+        await ctx.reply('📊 <b>Активних пропозицій немає</b>\n\nСтвори нову командою /new або переглянь 📁 Архів');
         return;
       }
 
       const { getBizDealCardMessage } = await import('../../utils/messages/businessMessages.js');
       
-      await ctx.reply(`📊 <b>Твої пропозиції (${deals.length}):</b>`, { parse_mode: 'HTML' });
+      await ctx.reply(`📊 <b>Активні пропозиції (${deals.length}):</b>`, { parse_mode: 'HTML' });
       
       for (const deal of deals) {
         await ctx.reply(getBizDealCardMessage(deal), { parse_mode: 'HTML' });

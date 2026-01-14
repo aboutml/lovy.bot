@@ -60,6 +60,9 @@ export const registerVerificationHandlers = (bot) => {
       await ctx.answerCbQuery('✅ Візит підтверджено!');
       await ctx.editMessageText(getVisitConfirmedMessage(deal), {
         parse_mode: 'HTML',
+      });
+      // Показуємо Reply keyboard окремим повідомленням
+      await ctx.reply('👆 Візит підтверджено!', {
         reply_markup: businessMainMenuKeyboard.reply_markup,
       });
 
@@ -80,7 +83,7 @@ export const registerVerificationHandlers = (bot) => {
       
       await ctx.answerCbQuery();
       await ctx.editMessageText('📝 Зафіксовано. Код залишається активним, клієнт може прийти пізніше.', {
-        reply_markup: businessMainMenuKeyboard.reply_markup,
+        parse_mode: 'HTML',
       });
     } catch (error) {
       console.error('Error in decline visit:', error);

@@ -373,15 +373,35 @@ export class Database {
     return data || [];
   }
 
-  async getBusinessDeals(businessId) {
+  async getBusinessDeals(businessId, activeOnly = false) {
+    let query = supabase
+      .from('deals')
+      .select('*')
+      .eq('business_id', businessId);
+    
+    if (activeOnly) {
+      query = query.in('status', ['active', 'activated']);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error getting business deals:', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  async getBusinessArchivedDeals(businessId) {
     const { data, error } = await supabase
       .from('deals')
       .select('*')
       .eq('business_id', businessId)
+      .in('status', ['completed', 'expired', 'cancelled'])
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('Error getting business deals:', error);
+      console.error('Error getting archived deals:', error);
       return [];
     }
     return data || [];

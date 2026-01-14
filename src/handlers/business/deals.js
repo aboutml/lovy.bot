@@ -46,7 +46,7 @@ export const registerBusinessDealsHandlers = (bot) => {
     }
   });
 
-  // Мої пропозиції (текстова кнопка)
+  // Мої пропозиції (текстова кнопка) - тільки активні
   bot.hears('📊 Мої пропозиції', async (ctx) => {
     try {
       const business = await db.getBusinessByTelegramId(ctx.from.id);
@@ -56,26 +56,66 @@ export const registerBusinessDealsHandlers = (bot) => {
         return;
       }
 
-      const deals = await db.getBusinessDeals(business.id);
+      const deals = await db.getBusinessDeals(business.id, true); // тільки активні
       
       if (deals.length === 0) {
-        await ctx.reply(getNoBizDealsMessage(), {
+        await ctx.reply('📊 <b>Активних пропозицій немає</b>\n\nСтворіть нову пропозицію або перегляньте 📁 Архів', {
           parse_mode: 'HTML',
           reply_markup: businessMainMenuKeyboard.reply_markup,
         });
         return;
       }
 
-      await ctx.reply(`📊 <b>Твої пропозиції (${deals.length}):</b>`, { parse_mode: 'HTML' });
+      await ctx.reply(`📊 <b>Активні пропозиції (${deals.length}):</b>`, { parse_mode: 'HTML' });
       
       for (const deal of deals) {
         await ctx.reply(getBizDealCardMessage(deal), {
           parse_mode: 'HTML',
-          reply_markup: businessDealCardKeyboard(deal.id, deal.status === 'completed').reply_markup,
+          reply_markup: businessDealCardKeyboard(deal.id, false).reply_markup,
         });
       }
     } catch (error) {
       console.error('Error in my deals:', error);
+      await ctx.reply(getBizErrorMessage(), { parse_mode: 'HTML' });
+    }
+  });
+
+  // Архів пропозицій (текстова кнопка)
+  bot.hears('📁 Архів', async (ctx) => {
+    try {
+      const business = await db.getBusinessByTelegramId(ctx.from.id);
+      
+      if (!business) {
+        await ctx.reply('Спочатку зареєструй свій бізнес!');
+        return;
+      }
+
+      const deals = await db.getBusinessArchivedDeals(business.id);
+      
+      if (deals.length === 0) {
+        await ctx.reply('📁 <b>Архів порожній</b>\n\nЗавершені пропозиції з\'являться тут', {
+          parse_mode: 'HTML',
+          reply_markup: businessMainMenuKeyboard.reply_markup,
+        });
+        return;
+      }
+
+      await ctx.reply(`📁 <b>Архів пропозицій (${deals.length}):</b>`, { parse_mode: 'HTML' });
+      
+      // Показуємо тільки останні 10 для архіву
+      const recentDeals = deals.slice(0, 10);
+      for (const deal of recentDeals) {
+        await ctx.reply(getBizDealCardMessage(deal), {
+          parse_mode: 'HTML',
+          reply_markup: businessDealCardKeyboard(deal.id, true).reply_markup,
+        });
+      }
+      
+      if (deals.length > 10) {
+        await ctx.reply(`<i>Показано останні 10 з ${deals.length}</i>`, { parse_mode: 'HTML' });
+      }
+    } catch (error) {
+      console.error('Error in archived deals:', error);
       await ctx.reply(getBizErrorMessage(), { parse_mode: 'HTML' });
     }
   });
