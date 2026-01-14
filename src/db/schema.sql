@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS deals (
   max_people INTEGER,
   duration_days INTEGER DEFAULT 7,
   validity_days INTEGER DEFAULT 14,
+  validity_minutes INTEGER, -- для тестових акцій (коротший термін коду)
   conditions TEXT,
   status VARCHAR(50) DEFAULT 'active',
   activated_at TIMESTAMP,
@@ -110,6 +111,14 @@ CREATE TABLE IF NOT EXISTS deals (
   completed_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Міграція: додати validity_minutes до deals якщо не існує (для тестових акцій)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'deals' AND column_name = 'validity_minutes') THEN
+    ALTER TABLE deals ADD COLUMN validity_minutes INTEGER;
+  END IF;
+END $$;
 
 -- Міграція: додати image_url до deals якщо не існує
 DO $$ 

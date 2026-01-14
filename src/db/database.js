@@ -469,7 +469,14 @@ export class Database {
     if (!deal) return null;
 
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + (deal.validity_days || config.code.validityDays));
+    
+    // Для тестових акцій (короткий термін) — validity_minutes
+    // Для звичайних — validity_days
+    if (deal.validity_minutes) {
+      expiresAt.setMinutes(expiresAt.getMinutes() + deal.validity_minutes);
+    } else {
+      expiresAt.setDate(expiresAt.getDate() + (deal.validity_days || config.code.validityDays));
+    }
 
     const { data, error } = await supabase
       .from('bookings')

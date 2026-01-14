@@ -240,8 +240,8 @@ export const registerBusinessDealsHandlers = (bot) => {
         ...stateData,
         duration_days: null,
         duration_minutes: minutes,
-        // Для тестових акцій — короткий термін дії коду (1 день)
-        validity_days: 1,
+        // Для тестових акцій — короткий термін дії коду (30 хвилин)
+        validity_minutes: 30,
       });
 
       await ctx.answerCbQuery();
@@ -301,6 +301,7 @@ export const registerBusinessDealsHandlers = (bot) => {
       if (stateData.duration_days) dealData.duration_days = stateData.duration_days;
       if (stateData.duration_minutes) dealData.duration_minutes = stateData.duration_minutes;
       if (stateData.validity_days) dealData.validity_days = stateData.validity_days;
+      if (stateData.validity_minutes) dealData.validity_minutes = stateData.validity_minutes;
       
       const deal = await db.createDeal(business.id, dealData);
 
