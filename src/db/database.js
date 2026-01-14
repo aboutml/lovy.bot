@@ -525,6 +525,20 @@ export class Database {
     return data;
   }
 
+  async getBookingById(bookingId) {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*, users(*), deals(*, businesses(*, categories(*)))')
+      .eq('id', bookingId)
+      .single();
+    
+    if (error) {
+      console.error('Error getting booking by id:', error);
+      return null;
+    }
+    return data;
+  }
+
   async getUserBookings(userId, status = null) {
     let query = supabase
       .from('bookings')

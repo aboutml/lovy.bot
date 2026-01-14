@@ -14,6 +14,7 @@ import {
   cancelKeyboard
 } from '../../utils/keyboards/businessKeyboards.js';
 import { normalizeCode, isValidCodeFormat } from '../../utils/codeGenerator.js';
+import { notificationService } from '../../services/notificationService.js';
 
 /**
  * Реєстрація обробників перевірки кодів
@@ -66,7 +67,11 @@ export const registerVerificationHandlers = (bot) => {
         reply_markup: businessMainMenuKeyboard.reply_markup,
       });
 
-      // TODO: Надіслати сповіщення клієнту
+      // Надсилаємо сповіщення клієнту
+      const fullBooking = await db.getBookingById(bookingId);
+      if (fullBooking) {
+        await notificationService.notifyUserAboutVisitConfirmation(fullBooking);
+      }
     } catch (error) {
       console.error('Error in confirm visit:', error);
       await ctx.answerCbQuery('Помилка');
