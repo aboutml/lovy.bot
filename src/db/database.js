@@ -380,7 +380,10 @@ export class Database {
       .eq('business_id', businessId);
     
     if (activeOnly) {
-      query = query.in('status', ['active', 'activated']);
+      // Тільки активні ТА час ще не вийшов
+      query = query
+        .in('status', ['active', 'activated'])
+        .gt('expires_at', new Date().toISOString());
     }
     
     const { data, error } = await query.order('created_at', { ascending: false });

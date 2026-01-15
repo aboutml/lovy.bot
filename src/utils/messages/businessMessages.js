@@ -160,6 +160,7 @@ export const getBizDealCardMessage = (deal) => {
   const progress = generateProgressBar(deal.current_people, deal.min_people);
   const progressPercent = Math.round((deal.current_people / deal.min_people) * 100);
   const timeLeft = getTimeRemaining(deal.expires_at);
+  const isTimeExpired = new Date(deal.expires_at) < new Date();
   
   const statusEmoji = {
     'active': '🟢',
@@ -175,9 +176,14 @@ export const getBizDealCardMessage = (deal) => {
   
   let timeInfo;
   if (isFinished) {
+    // Завершені — показуємо діапазон дат
     timeInfo = `📅 ${startDate} — ${endDate}`;
+  } else if (isTimeExpired) {
+    // Час вийшов але статус не оновлено
+    timeInfo = `📅 ${startDate} — ${endDate} (час вийшов)`;
   } else {
-    timeInfo = `⏰ ${timeLeft}`;
+    // Активні — показуємо залишок часу
+    timeInfo = `⏰ Залишилось: ${timeLeft}`;
   }
   
   return `${statusEmoji[deal.status] || '❓'} <b>${escapeHtml(deal.title)}</b>
