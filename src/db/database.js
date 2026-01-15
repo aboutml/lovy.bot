@@ -481,7 +481,7 @@ export class Database {
     const { data, error } = await supabase
       .from('deals')
       .select('*')
-      .in('status', ['active'])
+      .in('status', ['active', 'activated'])
       .lt('expires_at', new Date().toISOString());
     
     if (error) {

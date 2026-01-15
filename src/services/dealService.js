@@ -79,15 +79,25 @@ class DealService {
    */
   async expireDeal(deal) {
     try {
-      console.log(`[DealService] Expiring deal ${deal.id}: ${deal.title}`);
+      console.log(`[DealService] Expiring deal ${deal.id}: ${deal.title} (status: ${deal.status})`);
       
-      // Якщо акція набрала мінімум - активуємо перед завершенням
-      if (deal.current_people >= deal.min_people) {
-        await this.activateDeal(deal);
+      // Якщо акція вже активована — завершуємо як completed
+      if (deal.status === 'activated') {
+        await db.updateDealStatus(deal.id, 'completed');
+        console.log(`[DealService] Deal ${deal.id} completed (was activated)`);
         return;
       }
       
-      // Інакше скасовуємо
+      // Якщо акція active і набрала мінімум — активуємо перед завершенням
+      if (deal.current_people >= deal.min_people) {
+        await this.activateDeal(deal);
+        // Після активації одразу завершуємо
+        await db.updateDealStatus(deal.id, 'completed');
+        console.log(`[DealService] Deal ${deal.id} activated and completed`);
+        return;
+      }
+      
+      // Інакше скасовуємо (не набрали мінімум)
       await db.updateDealStatus(deal.id, 'cancelled');
       
       // Скасовуємо всі бронювання
@@ -96,7 +106,7 @@ class DealService {
         await db.updateBookingStatus(booking.id, 'cancelled');
       }
       
-      // TODO: Сповістити користувачів про скасування
+      console.log(`[DealService] Deal ${deal.id} cancelled (not enough people)`);
       
     } catch (error) {
       console.error(`[DealService] Error expiring deal ${deal.id}:`, error);
