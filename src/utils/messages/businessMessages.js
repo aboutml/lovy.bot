@@ -167,12 +167,24 @@ export const getBizDealCardMessage = (deal) => {
     'completed': '🏁',
     'cancelled': '❌',
   };
+
+  // Дати для відображення
+  const startDate = formatDate(deal.created_at);
+  const endDate = deal.completed_at ? formatDate(deal.completed_at) : formatDate(deal.expires_at);
+  const isFinished = ['completed', 'cancelled', 'expired'].includes(deal.status);
+  
+  let timeInfo;
+  if (isFinished) {
+    timeInfo = `📅 ${startDate} — ${endDate}`;
+  } else {
+    timeInfo = `⏰ ${timeLeft}`;
+  }
   
   return `${statusEmoji[deal.status] || '❓'} <b>${escapeHtml(deal.title)}</b>
 
 💰 ${formatPrice(deal.original_price)} → ${formatPrice(deal.discount_price)} (-${discount}%)
 👥 ${progress} ${deal.current_people}/${deal.min_people} (${progressPercent}%)
-⏰ ${deal.status === 'active' ? timeLeft : 'Завершено'}
+${timeInfo}
 
 Статус: <b>${getStatusText(deal.status)}</b>`;
 };

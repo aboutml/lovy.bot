@@ -430,6 +430,34 @@ export class Database {
     return data;
   }
 
+  /**
+   * Перевіряє чи всі бронювання акції використані і автоматично завершує акцію
+   */
+  async checkAndCompleteDeal(dealId) {
+    try {
+      const deal = await this.getDealById(dealId);
+      if (!deal || deal.status === 'completed') return false;
+
+      // Отримуємо всі бронювання акції
+      const bookings = await this.getDealBookings(dealId);
+      if (bookings.length === 0) return false;
+
+      // Перевіряємо чи всі використані (status = 'used' або 'confirmed')
+      const allUsed = bookings.every(b => ['used', 'confirmed'].includes(b.status));
+      
+      if (allUsed) {
+        await this.updateDealStatus(dealId, 'completed');
+        console.log(`[DB] Deal ${dealId} auto-completed: all ${bookings.length} bookings used`);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error checking deal completion:', error);
+      return false;
+    }
+  }
+
   async getDealsToActivate() {
     // Знаходимо активні акції
     const { data, error } = await supabase

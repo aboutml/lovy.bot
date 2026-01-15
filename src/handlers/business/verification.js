@@ -72,6 +72,12 @@ export const registerVerificationHandlers = (bot) => {
       if (fullBooking) {
         await notificationService.notifyUserAboutVisitConfirmation(fullBooking);
       }
+
+      // Перевіряємо чи всі бронювання використані — автозавершення акції
+      const dealCompleted = await db.checkAndCompleteDeal(booking.deal_id);
+      if (dealCompleted) {
+        await ctx.reply('🎉 Всі клієнти скористалися акцією! Акцію автоматично завершено.');
+      }
     } catch (error) {
       console.error('Error in confirm visit:', error);
       await ctx.answerCbQuery('Помилка');
