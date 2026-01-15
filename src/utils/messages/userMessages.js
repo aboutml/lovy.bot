@@ -153,12 +153,10 @@ ${business?.categories?.emoji || '🏪'} ${escapeHtml(deal?.title || '')}
 /**
  * Повідомлення з подякою за відгук
  */
-export const getThankYouForReviewMessage = (bonusPoints) => {
+export const getThankYouForReviewMessage = () => {
   return `🌟 <b>Дякуємо за відгук!</b> 💙
 
-${bonusPoints > 0 ? `🎁 За активність ти отримуєш <b>+${bonusPoints} бонусів!</b>
-
-Бонуси можна використати для додаткової знижки на наступні пропозиції.` : ''}`;
+Твоя оцінка допоможе іншим користувачам знайти найкращі пропозиції.`;
 };
 
 /**
@@ -173,8 +171,7 @@ export const getProfileMessage = (user) => {
 
 📊 <b>Статистика:</b>
 • Використано знижок: ${user.deals_used || 0}
-• Заощаджено: ${formatPrice(user.total_saved || 0)}
-${user.bonus_points > 0 ? `\n💰 <b>Бонуси:</b> ${user.bonus_points}` : ''}`;
+• Заощаджено: ${formatPrice(user.total_saved || 0)}`;
 };
 
 /**

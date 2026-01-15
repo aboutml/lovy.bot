@@ -5,8 +5,6 @@ import {
 } from '../../utils/messages/userMessages.js';
 import { ratingInlineKeyboard } from '../../utils/keyboards/userKeyboards.js';
 
-const REVIEW_BONUS_POINTS = 10;
-
 /**
  * Реєстрація обробників відгуків
  */
@@ -71,11 +69,8 @@ export const registerReviewHandlers = (bot) => {
       const savedAmount = deal.original_price - deal.discount_price;
       await db.incrementUserStats(ctx.from.id, savedAmount);
       
-      // Нараховуємо бонуси
-      await db.addUserBonus(ctx.from.id, REVIEW_BONUS_POINTS);
-      
       await ctx.answerCbQuery();
-      await ctx.editMessageText(getThankYouForReviewMessage(REVIEW_BONUS_POINTS), {
+      await ctx.editMessageText(getThankYouForReviewMessage(), {
         parse_mode: 'HTML',
       });
     } catch (error) {
