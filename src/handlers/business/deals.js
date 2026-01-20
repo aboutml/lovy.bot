@@ -46,6 +46,29 @@ export const registerBusinessDealsHandlers = (bot) => {
     }
   });
 
+  // Нова пропозиція (inline кнопка)
+  bot.action('create_deal', async (ctx) => {
+    try {
+      const business = await db.getBusinessByTelegramId(ctx.from.id);
+      
+      if (!business) {
+        await ctx.answerCbQuery('Спочатку зареєструй свій бізнес!');
+        return;
+      }
+
+      await db.updateBusinessState(ctx.from.id, 'creating_deal_title', {});
+      
+      await ctx.answerCbQuery();
+      await ctx.reply(getDealCreationSteps.title, {
+        parse_mode: 'HTML',
+        reply_markup: cancelKeyboard.reply_markup,
+      });
+    } catch (error) {
+      console.error('Error in create_deal callback:', error);
+      await ctx.answerCbQuery('Помилка');
+    }
+  });
+
   // Мої пропозиції (текстова кнопка) - тільки активні
   bot.hears('📊 Мої пропозиції', async (ctx) => {
     try {
@@ -425,6 +448,7 @@ export const registerBusinessDealsHandlers = (bot) => {
         reply_markup: {
           inline_keyboard: [
             [{ text: '📊 Детальна статистика', callback_data: `biz_deal_stats_${dealId}` }],
+            [{ text: '➕ Створити нову пропозицію', callback_data: 'create_deal' }],
           ],
         },
       });
