@@ -291,6 +291,11 @@ export const registerBusinessDealsHandlers = (bot) => {
       
       await db.updateBusinessState(ctx.from.id, 'confirming_deal', stateData);
 
+      // Прибираємо Reply keyboard
+      await ctx.reply('📋 Перевір деталі пропозиції:', {
+        reply_markup: { remove_keyboard: true },
+      });
+      
       await ctx.reply(getDealPreviewMessage(stateData), {
         parse_mode: 'HTML',
         reply_markup: dealConfirmKeyboard.reply_markup,
@@ -581,6 +586,11 @@ export const handleDealPhoto = async (ctx, business) => {
     };
 
     await db.updateBusinessState(ctx.from.id, 'confirming_deal', dealData);
+
+    // Прибираємо Reply keyboard
+    await ctx.reply('📋 Перевір деталі пропозиції:', {
+      reply_markup: { remove_keyboard: true },
+    });
 
     await ctx.reply(getDealPreviewMessage(dealData), {
       parse_mode: 'HTML',
