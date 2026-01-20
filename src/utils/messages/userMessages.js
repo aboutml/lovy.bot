@@ -163,11 +163,7 @@ export const getThankYouForReviewMessage = () => {
  * Повідомлення профілю
  */
 export const getProfileMessage = (user) => {
-  const cityName = user.cities?.name || 'Не вибрано';
-  
   return `👤 <b>Твій профіль</b>
-
-📍 Місто: ${escapeHtml(cityName)}
 
 📊 <b>Статистика:</b>
 • Використано знижок: ${user.deals_used || 0}

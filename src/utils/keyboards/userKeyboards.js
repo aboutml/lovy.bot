@@ -23,7 +23,7 @@ export const citySelectionKeyboard = (cities) => {
 export const mainMenuKeyboard = Markup.keyboard([
   ['🔥 Гарячі пропозиції'],
   ['💅 Краса', '🍕 Їжа', '🎯 Послуги'],
-  ['👤 Мій профіль', '📍 Змінити місто'],
+  ['👤 Мій профіль'],
 ]).resize();
 
 /**

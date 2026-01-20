@@ -1,6 +1,6 @@
 import { db } from '../../db/database.js';
-import { getWelcomeMessage, getMainMenuMessage, getProfileMessage, getErrorMessage } from '../../utils/messages/userMessages.js';
-import { citySelectionKeyboard, mainMenuKeyboard, profileInlineKeyboard } from '../../utils/keyboards/userKeyboards.js';
+import { getMainMenuMessage, getProfileMessage, getErrorMessage } from '../../utils/messages/userMessages.js';
+import { mainMenuKeyboard, profileInlineKeyboard } from '../../utils/keyboards/userKeyboards.js';
 import { parseStartParams } from '../../utils/helpers.js';
 
 /**
@@ -34,23 +34,19 @@ export const registerUserCommands = (bot) => {
       }
 
       // Перевіряємо чи є вибране місто
-      const dbUser = await db.getUserByTelegramId(user.id);
+      let dbUser = await db.getUserByTelegramId(user.id);
       
-      if (dbUser?.city_id) {
-        // Є місто - показуємо головне меню
-        const cityName = dbUser.cities?.name || 'Невідоме місто';
-        await ctx.reply(getMainMenuMessage(cityName), {
-          parse_mode: 'HTML',
-          reply_markup: mainMenuKeyboard.reply_markup,
-        });
-      } else {
-        // Немає міста - показуємо вибір міста
-        const cities = await db.getAllCities();
-        await ctx.reply(getWelcomeMessage(user.first_name), {
-          parse_mode: 'HTML',
-          reply_markup: citySelectionKeyboard(cities).reply_markup,
-        });
+      // Якщо немає міста — автоматично призначаємо Дніпро (id=1)
+      if (!dbUser?.city_id) {
+        await db.updateUserCity(user.id, 1); // Дніпро
+        dbUser = await db.getUserByTelegramId(user.id);
       }
+      
+      // Показуємо головне меню
+      await ctx.reply(getMainMenuMessage('Дніпро'), {
+        parse_mode: 'HTML',
+        reply_markup: mainMenuKeyboard.reply_markup,
+      });
     } catch (error) {
       console.error('Error in /start command:', error);
       await ctx.reply(getErrorMessage(), { parse_mode: 'HTML' });

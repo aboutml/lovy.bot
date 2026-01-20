@@ -6,12 +6,25 @@ import { mainMenuKeyboard, citySelectionKeyboard } from '../../utils/keyboards/u
  * Реєстрація обробників вибору міста
  */
 export const registerCitySelectionHandlers = (bot) => {
+  // Обробка кнопки "Змінити місто" — ПЕРЕД загальним regex handler
+  bot.hears('📍 Змінити місто', async (ctx) => {
+    try {
+      const cities = await db.getAllCities();
+      await ctx.reply('Обери нове місто:', {
+        reply_markup: citySelectionKeyboard(cities).reply_markup,
+      });
+    } catch (error) {
+      console.error('Error in change city:', error);
+      await ctx.reply(getErrorMessage(), { parse_mode: 'HTML' });
+    }
+  });
+
   // Обробка текстових кнопок вибору міста (динамічно по назві)
   bot.hears(/^📍 (.+)$/, async (ctx) => {
     try {
       const cityName = ctx.match[1];
       
-      // Пропускаємо кнопку "Змінити місто" — вона обробляється окремо
+      // Пропускаємо "Змінити місто" — вона обробляється вище
       if (cityName === 'Змінити місто') {
         return;
       }
@@ -37,19 +50,6 @@ export const registerCitySelectionHandlers = (bot) => {
       });
     } catch (error) {
       console.error('Error in city selection:', error);
-      await ctx.reply(getErrorMessage(), { parse_mode: 'HTML' });
-    }
-  });
-
-  // Обробка кнопки "Змінити місто"
-  bot.hears('📍 Змінити місто', async (ctx) => {
-    try {
-      const cities = await db.getAllCities();
-      await ctx.reply('Обери нове місто:', {
-        reply_markup: citySelectionKeyboard(cities).reply_markup,
-      });
-    } catch (error) {
-      console.error('Error in change city:', error);
       await ctx.reply(getErrorMessage(), { parse_mode: 'HTML' });
     }
   });

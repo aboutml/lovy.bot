@@ -317,6 +317,15 @@ export class Database {
   }
 
   async getActiveDeals(cityId, categorySlug = null, limit = 10, userId = null) {
+    // Якщо є категорія — спочатку отримуємо її ID
+    let categoryId = null;
+    if (categorySlug) {
+      const category = await this.getCategoryBySlug(categorySlug);
+      if (category) {
+        categoryId = category.id;
+      }
+    }
+
     let query = supabase
       .from('deals')
       .select('*, businesses!inner(*, cities(*), categories(*))')
@@ -326,8 +335,9 @@ export class Database {
       .order('created_at', { ascending: false })
       .limit(limit);
 
-    if (categorySlug) {
-      query = query.eq('businesses.categories.slug', categorySlug);
+    // Фільтруємо по category_id бізнесу
+    if (categoryId) {
+      query = query.eq('businesses.category_id', categoryId);
     }
 
     const { data, error } = await query;
