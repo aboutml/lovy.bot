@@ -381,7 +381,10 @@ export const registerBusinessDealsHandlers = (bot) => {
       await db.updateBusinessState(ctx.from.id, 'idle', {});
       
       await ctx.answerCbQuery('Скасовано');
-      await ctx.editMessageText(getBizMainMenuMessage(business), {
+      // editMessageText accepts only inline_keyboard; main menu uses reply keyboard.
+      // Delete the message and send a new one with the reply keyboard.
+      await ctx.deleteMessage().catch(() => {});
+      await ctx.reply(getBizMainMenuMessage(business), {
         parse_mode: 'HTML',
         reply_markup: businessMainMenuKeyboard.reply_markup,
       });
