@@ -34,7 +34,7 @@ export const registerBusinessDealsHandlers = (bot) => {
         return;
       }
 
-      await db.updateBusinessState(ctx.from.id, 'creating_deal_title', {});
+      await db.updateBusinessState(business.id, 'creating_deal_title', {});
       
       await ctx.reply(getDealCreationSteps.title, {
         parse_mode: 'HTML',
@@ -56,7 +56,7 @@ export const registerBusinessDealsHandlers = (bot) => {
         return;
       }
 
-      await db.updateBusinessState(ctx.from.id, 'creating_deal_title', {});
+      await db.updateBusinessState(business.id, 'creating_deal_title', {});
       
       await ctx.answerCbQuery();
       await ctx.reply(getDealCreationSteps.title, {
@@ -210,7 +210,7 @@ export const registerBusinessDealsHandlers = (bot) => {
       const business = await db.getBusinessByTelegramId(ctx.from.id);
       const stateData = business?.state_data || {};
       
-      await db.updateBusinessState(ctx.from.id, 'creating_deal_duration', {
+      await db.updateBusinessState(business.id, 'creating_deal_duration', {
         ...stateData,
         min_people: minPeople,
       });
@@ -233,7 +233,7 @@ export const registerBusinessDealsHandlers = (bot) => {
       const business = await db.getBusinessByTelegramId(ctx.from.id);
       const stateData = business?.state_data || {};
       
-      await db.updateBusinessState(ctx.from.id, 'creating_deal_photo', {
+      await db.updateBusinessState(business.id, 'creating_deal_photo', {
         ...stateData,
         duration_days: duration,
         duration_minutes: null,
@@ -259,7 +259,7 @@ export const registerBusinessDealsHandlers = (bot) => {
       const business = await db.getBusinessByTelegramId(ctx.from.id);
       const stateData = business?.state_data || {};
       
-      await db.updateBusinessState(ctx.from.id, 'creating_deal_photo', {
+      await db.updateBusinessState(business.id, 'creating_deal_photo', {
         ...stateData,
         duration_days: null,
         duration_minutes: minutes,
@@ -289,7 +289,7 @@ export const registerBusinessDealsHandlers = (bot) => {
       
       const stateData = business?.state_data || {};
       
-      await db.updateBusinessState(ctx.from.id, 'confirming_deal', stateData);
+      await db.updateBusinessState(business.id, 'confirming_deal', stateData);
 
       // Прибираємо Reply keyboard
       await ctx.reply('📋 Перевір деталі пропозиції:', {
@@ -338,7 +338,7 @@ export const registerBusinessDealsHandlers = (bot) => {
         return;
       }
 
-      await db.updateBusinessState(ctx.from.id, 'idle', {});
+      await db.updateBusinessState(business.id, 'idle', {});
 
       await ctx.answerCbQuery('✅ Опубліковано!');
       
@@ -362,7 +362,12 @@ export const registerBusinessDealsHandlers = (bot) => {
   // Редагування (повернення до початку)
   bot.action('deal_edit', async (ctx) => {
     try {
-      await db.updateBusinessState(ctx.from.id, 'creating_deal_title', {});
+      const business = await db.getBusinessByTelegramId(ctx.from.id);
+      if (!business) {
+        await ctx.answerCbQuery('Помилка');
+        return;
+      }
+      await db.updateBusinessState(business.id, 'creating_deal_title', {});
       
       await ctx.answerCbQuery();
       await ctx.editMessageText(getDealCreationSteps.title, {
@@ -378,7 +383,7 @@ export const registerBusinessDealsHandlers = (bot) => {
   bot.action('deal_cancel', async (ctx) => {
     try {
       const business = await db.getBusinessByTelegramId(ctx.from.id);
-      await db.updateBusinessState(ctx.from.id, 'idle', {});
+      await db.updateBusinessState(business.id, 'idle', {});
       
       await ctx.answerCbQuery('Скасовано');
       // editMessageText accepts only inline_keyboard; main menu uses reply keyboard.
@@ -498,7 +503,7 @@ export const handleDealCreationText = async (ctx, business) => {
         return true;
       }
       
-      await db.updateBusinessState(ctx.from.id, 'creating_deal_original_price', {
+      await db.updateBusinessState(business.id, 'creating_deal_original_price', {
         title: text,
       });
       
@@ -514,7 +519,7 @@ export const handleDealCreationText = async (ctx, business) => {
         return true;
       }
       
-      await db.updateBusinessState(ctx.from.id, 'creating_deal_discount_price', {
+      await db.updateBusinessState(business.id, 'creating_deal_discount_price', {
         ...stateData,
         original_price: originalPrice,
       });
@@ -536,7 +541,7 @@ export const handleDealCreationText = async (ctx, business) => {
         return true;
       }
       
-      await db.updateBusinessState(ctx.from.id, 'creating_deal_min_people', {
+      await db.updateBusinessState(business.id, 'creating_deal_min_people', {
         ...stateData,
         discount_price: discountPrice,
       });
@@ -588,7 +593,7 @@ export const handleDealPhoto = async (ctx, business) => {
       image_url: imageUrl,
     };
 
-    await db.updateBusinessState(ctx.from.id, 'confirming_deal', dealData);
+    await db.updateBusinessState(business.id, 'confirming_deal', dealData);
 
     // Прибираємо Reply keyboard
     await ctx.reply('📋 Перевір деталі пропозиції:', {

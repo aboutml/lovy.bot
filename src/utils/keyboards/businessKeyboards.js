@@ -4,7 +4,7 @@ import { Markup } from 'telegraf';
  * Стартова клавіатура для незареєстрованого бізнесу
  */
 export const startKeyboard = Markup.inlineKeyboard([
-  [Markup.button.callback('📝 Зареєструвати бізнес', 'business_register')],
+  [Markup.button.callback('➕ Створити бізнес', 'business_register')],
   [Markup.button.callback('ℹ️ Як це працює?', 'business_how_it_works')],
 ]);
 
@@ -14,8 +14,23 @@ export const startKeyboard = Markup.inlineKeyboard([
 export const businessMainMenuKeyboard = Markup.keyboard([
   ['➕ Нова пропозиція', '📊 Мої пропозиції'],
   ['🎫 Перевірити код', '📁 Архів'],
+  ['🔄 Мої бізнеси', '➕ Додати бізнес'],
   ['📈 Статистика', '⚙️ Налаштування'],
 ]).resize();
+
+/** Inline-клавіатура списку бізнесів (переключення + додати) */
+export const businessListKeyboard = (businesses, currentId) => {
+  const rows = businesses
+    .filter(b => b.name)
+    .map(b => [
+      Markup.button.callback(
+        (b.id === currentId ? '✓ ' : '') + (b.name || `Бізнес #${b.id}`),
+        `biz_switch_${b.id}`,
+      ),
+    ]);
+  rows.push([Markup.button.callback('➕ Додати бізнес', 'biz_add_business')]);
+  return Markup.inlineKeyboard(rows);
+};
 
 /**
  * Клавіатура вибору категорії

@@ -30,7 +30,7 @@ export const registerVerificationHandlers = (bot) => {
         return;
       }
 
-      await db.updateBusinessState(ctx.from.id, 'checking_code', {});
+      await db.updateBusinessState(business.id, 'checking_code', {});
       
       await ctx.reply(getCodeCheckPromptMessage(), {
         parse_mode: 'HTML',

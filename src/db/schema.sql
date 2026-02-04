@@ -53,10 +53,10 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Бізнеси
+-- Бізнеси (один акаунт може мати кілька бізнесів)
 CREATE TABLE IF NOT EXISTS businesses (
   id BIGSERIAL PRIMARY KEY,
-  telegram_id BIGINT UNIQUE NOT NULL,
+  telegram_id BIGINT NOT NULL,
   name VARCHAR(255),
   category_id INTEGER REFERENCES categories(id),
   city_id INTEGER REFERENCES cities(id),
@@ -228,6 +228,12 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_users_telegram ON users(telegram_id);
 CREATE INDEX IF NOT EXISTS idx_users_city ON users(city_id);
 CREATE INDEX IF NOT EXISTS idx_users_state ON users(state);
+
+-- Сесія оператора: який бізнес зараз обраний (для перемикання між бізнесами)
+CREATE TABLE IF NOT EXISTS business_operator_sessions (
+  telegram_id BIGINT PRIMARY KEY,
+  current_business_id BIGINT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE
+);
 
 CREATE INDEX IF NOT EXISTS idx_businesses_telegram ON businesses(telegram_id);
 CREATE INDEX IF NOT EXISTS idx_businesses_city ON businesses(city_id);

@@ -201,21 +201,71 @@ export class Database {
   }
 
   // =============================================
-  // BUSINESSES
+  // BUSINESSES (один акаунт — кілька бізнесів)
   // =============================================
-  
-  async getBusinessByTelegramId(telegramId) {
+
+  /** Список усіх бізнесів оператора по telegram_id */
+  async getBusinessesByTelegramId(telegramId) {
     const { data, error } = await supabase
       .from('businesses')
       .select('*, cities(*), categories(*)')
       .eq('telegram_id', telegramId)
+      .order('created_at', { ascending: true });
+    if (error) {
+      console.error('Error getting businesses:', error);
+      return [];
+    }
+    return data || [];
+  }
+
+  /** Поточний обраний бізнес (з сесії або перший у списку) */
+  async getCurrentBusiness(telegramId) {
+    const list = await this.getBusinessesByTelegramId(telegramId);
+    if (list.length === 0) return null;
+    const { data: session } = await supabase
+      .from('business_operator_sessions')
+      .select('current_business_id')
+      .eq('telegram_id', telegramId)
       .single();
-    
+    const currentId = session?.current_business_id;
+    if (currentId) {
+      const found = list.find(b => b.id === currentId);
+      if (found) return found;
+    }
+    return list[0];
+  }
+
+  /** Зберегти поточний бізнес для оператора */
+  async setCurrentBusiness(telegramId, businessId) {
+    const { error } = await supabase
+      .from('business_operator_sessions')
+      .upsert({ telegram_id: telegramId, current_business_id: businessId }, {
+        onConflict: 'telegram_id',
+      });
+    if (error) {
+      console.error('Error setCurrentBusiness:', error);
+      return false;
+    }
+    return true;
+  }
+
+  /** Один бізнес по id */
+  async getBusinessById(businessId) {
+    const { data, error } = await supabase
+      .from('businesses')
+      .select('*, cities(*), categories(*)')
+      .eq('id', businessId)
+      .single();
     if (error && error.code !== 'PGRST116') {
-      console.error('Error getting business:', error);
+      console.error('Error getBusinessById:', error);
       return null;
     }
     return data;
+  }
+
+  /** Для сумісності: поточний бізнес оператора */
+  async getBusinessByTelegramId(telegramId) {
+    return this.getCurrentBusiness(telegramId);
   }
 
   async createBusiness(telegramId, businessData) {
@@ -227,22 +277,22 @@ export class Database {
       })
       .select()
       .single();
-    
     if (error) {
       console.error('Error creating business:', error);
       return null;
     }
+    // Встановити новий бізнес як поточний
+    await this.setCurrentBusiness(telegramId, data.id);
     return data;
   }
 
-  async updateBusiness(telegramId, businessData) {
+  async updateBusinessById(businessId, businessData) {
     const { data, error } = await supabase
       .from('businesses')
       .update(businessData)
-      .eq('telegram_id', telegramId)
+      .eq('id', businessId)
       .select()
       .single();
-    
     if (error) {
       console.error('Error updating business:', error);
       return null;
@@ -250,16 +300,14 @@ export class Database {
     return data;
   }
 
-  async updateBusinessState(telegramId, state, stateData = {}) {
+  async updateBusinessState(businessId, state, stateData = {}) {
     const { data, error } = await supabase
       .from('businesses')
       .update({ state, state_data: stateData })
-      .eq('telegram_id', telegramId)
+      .eq('id', businessId)
       .select()
       .single();
-    
     if (error) {
-      // PGRST116 = no rows found - це нормально для нових бізнесів
       if (error.code !== 'PGRST116') {
         console.error('Error updating business state:', error);
       }

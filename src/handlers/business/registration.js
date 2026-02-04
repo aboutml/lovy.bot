@@ -34,37 +34,70 @@ export const registerBusinessRegistrationHandlers = (bot) => {
     }
   });
 
-  // Початок реєстрації
+  // Початок реєстрації (перший бізнес або продовження незавершеної)
   bot.action('business_register', async (ctx) => {
     try {
       await ctx.answerCbQuery();
-      
-      // Перевіряємо чи вже зареєстрований
-      const existing = await db.getBusinessByTelegramId(ctx.from.id);
-      if (existing && existing.name) {
-        await ctx.editMessageText(getBizMainMenuMessage(existing), {
+      const list = await db.getBusinessesByTelegramId(ctx.from.id);
+      const current = list.length > 0 ? await db.getCurrentBusiness(ctx.from.id) : null;
+
+      if (current?.name) {
+        await ctx.editMessageText(getBizMainMenuMessage(current), {
           parse_mode: 'HTML',
           reply_markup: businessMainMenuKeyboard.reply_markup,
         });
         return;
       }
 
-      // Створюємо порожній запис бізнесу зі станом реєстрації
-      if (!existing) {
-        await db.createBusiness(ctx.from.id, { 
-          state: 'registering_name',
-          state_data: {} 
-        });
+      if (list.length === 0) {
+        await db.createBusiness(ctx.from.id, { state: 'registering_name', state_data: {} });
       } else {
-        await db.updateBusinessState(ctx.from.id, 'registering_name', {});
+        await db.updateBusinessState(current.id, 'registering_name', {});
       }
-      
+
       await ctx.reply(getBizRegistrationSteps.name, {
         parse_mode: 'HTML',
         reply_markup: cancelKeyboard.reply_markup,
       });
     } catch (error) {
       console.error('Error in business_register:', error);
+      await ctx.answerCbQuery('Помилка');
+    }
+  });
+
+  // Додати ще один бізнес (inline з списку)
+  bot.action('biz_add_business', async (ctx) => {
+    try {
+      await ctx.answerCbQuery();
+      await db.createBusiness(ctx.from.id, { state: 'registering_name', state_data: {} });
+      await ctx.reply(getBizRegistrationSteps.name, {
+        parse_mode: 'HTML',
+        reply_markup: cancelKeyboard.reply_markup,
+      });
+    } catch (error) {
+      console.error('Error in biz_add_business:', error);
+      await ctx.answerCbQuery('Помилка');
+    }
+  });
+
+  // Переключити на інший бізнес
+  bot.action(/biz_switch_(\d+)/, async (ctx) => {
+    try {
+      const businessId = parseInt(ctx.match[1]);
+      const business = await db.getBusinessById(businessId);
+      if (!business || business.telegram_id !== ctx.from.id) {
+        await ctx.answerCbQuery('Бізнес не знайдено');
+        return;
+      }
+      await db.setCurrentBusiness(ctx.from.id, businessId);
+      await ctx.answerCbQuery(`Обрано: ${business.name || 'Бізнес'}`);
+      await ctx.deleteMessage().catch(() => {});
+      await ctx.reply(getBizMainMenuMessage(business), {
+        parse_mode: 'HTML',
+        reply_markup: businessMainMenuKeyboard.reply_markup,
+      });
+    } catch (error) {
+      console.error('Error in biz_switch:', error);
       await ctx.answerCbQuery('Помилка');
     }
   });
@@ -83,7 +116,7 @@ export const registerBusinessRegistrationHandlers = (bot) => {
       const business = await db.getBusinessByTelegramId(ctx.from.id);
       const stateData = business?.state_data || {};
       
-      await db.updateBusinessState(ctx.from.id, 'registering_city', {
+      await db.updateBusinessState(business.id, 'registering_city', {
         ...stateData,
         category_id: category.id,
       });
@@ -110,7 +143,7 @@ export const registerBusinessRegistrationHandlers = (bot) => {
       const business = await db.getBusinessByTelegramId(ctx.from.id);
       const stateData = business?.state_data || {};
       
-      await db.updateBusinessState(ctx.from.id, 'registering_address', {
+      await db.updateBusinessState(business.id, 'registering_address', {
         ...stateData,
         city_id: cityId,
       });
@@ -131,16 +164,14 @@ export const registerBusinessRegistrationHandlers = (bot) => {
     try {
       const business = await db.getBusinessByTelegramId(ctx.from.id);
       
-      // Якщо бізнес вже зареєстрований - показуємо меню
       if (business?.name) {
-        await db.updateBusinessState(ctx.from.id, 'idle', {});
+        await db.updateBusinessState(business.id, 'idle', {});
         await ctx.reply(getBizMainMenuMessage(business), {
           parse_mode: 'HTML',
           reply_markup: businessMainMenuKeyboard.reply_markup,
         });
       } else {
-        // Інакше - стартове меню
-        await db.updateBusinessState(ctx.from.id, 'idle', {});
+        await db.updateBusinessState(business.id, 'idle', {});
         await ctx.reply('Реєстрацію скасовано.', {
           reply_markup: startKeyboard.reply_markup,
         });
@@ -168,9 +199,8 @@ export const handleRegistrationText = async (ctx, business) => {
         return true;
       }
       
-      // Оновлюємо запис бізнесу з назвою
-      await db.updateBusiness(ctx.from.id, { name: text });
-      await db.updateBusinessState(ctx.from.id, 'registering_category', { name: text });
+      await db.updateBusinessById(business.id, { name: text });
+      await db.updateBusinessState(business.id, 'registering_category', { name: text });
       
       await ctx.reply(getBizRegistrationSteps.category, {
         parse_mode: 'HTML',
@@ -184,7 +214,7 @@ export const handleRegistrationText = async (ctx, business) => {
         return true;
       }
       
-      await db.updateBusinessState(ctx.from.id, 'registering_social', {
+      await db.updateBusinessState(business.id, 'registering_social', {
         ...stateData,
         address: text,
       });
@@ -207,17 +237,14 @@ export const handleRegistrationText = async (ctx, business) => {
       // Зберігаємо нормалізоване значення (якщо є)
       const socialLink = socialValidation.normalized || text;
       
-      // Завершуємо реєстрацію
-      await db.updateBusiness(ctx.from.id, {
+      await db.updateBusinessById(business.id, {
         category_id: stateData.category_id,
         city_id: stateData.city_id,
         address: stateData.address,
         social_link: socialLink,
       });
-      
-      await db.updateBusinessState(ctx.from.id, 'idle', {});
-      
-      const updatedBusiness = await db.getBusinessByTelegramId(ctx.from.id);
+      await db.updateBusinessState(business.id, 'idle', {});
+      const updatedBusiness = await db.getBusinessById(business.id);
       
       await ctx.reply(getBizRegistrationCompleteMessage(updatedBusiness), {
         parse_mode: 'HTML',

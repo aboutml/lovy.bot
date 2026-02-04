@@ -1,6 +1,6 @@
 import { db } from '../../db/database.js';
 import { getBizWelcomeMessage, getBizMainMenuMessage, getBizErrorMessage } from '../../utils/messages/businessMessages.js';
-import { startKeyboard, businessMainMenuKeyboard } from '../../utils/keyboards/businessKeyboards.js';
+import { startKeyboard, businessMainMenuKeyboard, businessListKeyboard } from '../../utils/keyboards/businessKeyboards.js';
 
 /**
  * Реєстрація команд для бота бізнесу
@@ -72,7 +72,7 @@ export const registerBusinessCommands = (bot) => {
       }
 
       // Запускаємо процес створення
-      await db.updateBusinessState(ctx.from.id, 'creating_deal_title', {});
+      await db.updateBusinessState(business.id, 'creating_deal_title', {});
       
       const { getDealCreationSteps } = await import('../../utils/messages/businessMessages.js');
       await ctx.reply(getDealCreationSteps.title, {
@@ -124,12 +124,52 @@ export const registerBusinessCommands = (bot) => {
         return;
       }
 
-      await db.updateBusinessState(ctx.from.id, 'checking_code', {});
+      await db.updateBusinessState(business.id, 'checking_code', {});
       
       const { getCodeCheckPromptMessage } = await import('../../utils/messages/businessMessages.js');
       await ctx.reply(getCodeCheckPromptMessage(), { parse_mode: 'HTML' });
     } catch (error) {
       console.error('Error in /check command:', error);
+      await ctx.reply(getBizErrorMessage(), { parse_mode: 'HTML' });
+    }
+  });
+
+  // Мої бізнеси — список і переключення
+  bot.hears('🔄 Мої бізнеси', async (ctx) => {
+    try {
+      const list = await db.getBusinessesByTelegramId(ctx.from.id);
+      const current = await db.getCurrentBusiness(ctx.from.id);
+      if (list.length === 0) {
+        await ctx.reply('У тебе ще немає бізнесів. Натисни «Зареєструвати бізнес» у стартовому меню.', {
+          parse_mode: 'HTML',
+        });
+        return;
+      }
+      const text = list.length === 1
+        ? '📋 <b>Твій бізнес</b>\n\nОбери або додай ще один:'
+        : `📋 <b>Мої бізнеси (${list.length})</b>\n\nОбери бізнес або додай новий:`;
+      await ctx.reply(text, {
+        parse_mode: 'HTML',
+        reply_markup: businessListKeyboard(list, current?.id).reply_markup,
+      });
+    } catch (error) {
+      console.error('Error in Мої бізнеси:', error);
+      await ctx.reply(getBizErrorMessage(), { parse_mode: 'HTML' });
+    }
+  });
+
+  // Додати бізнес (текстова кнопка)
+  bot.hears('➕ Додати бізнес', async (ctx) => {
+    try {
+      const { getBizRegistrationSteps } = await import('../../utils/messages/businessMessages.js');
+      const { cancelKeyboard } = await import('../../utils/keyboards/businessKeyboards.js');
+      await db.createBusiness(ctx.from.id, { state: 'registering_name', state_data: {} });
+      await ctx.reply(getBizRegistrationSteps.name, {
+        parse_mode: 'HTML',
+        reply_markup: cancelKeyboard.reply_markup,
+      });
+    } catch (error) {
+      console.error('Error in Додати бізнес:', error);
       await ctx.reply(getBizErrorMessage(), { parse_mode: 'HTML' });
     }
   });
